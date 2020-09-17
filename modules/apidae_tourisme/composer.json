@@ -1,0 +1,18 @@
+{
+  "name": "drupal/apidae_tourisme",
+  "type": "drupal-module",
+  "description": "Apidae API bridge",
+  "keywords": ["Drupal"],
+  "license": "GPL-2.0+",
+  "homepage": "https://www.drupal.org/project/apidae_tourisme",
+  "minimum-stability": "dev",
+  "support": {
+    "issues": "https://www.drupal.org/project/issues/apidae_tourisme",
+    "source": "https://git.drupalcode.org/project/apidae_tourisme"
+  },
+  "require": {
+    "drupal/core": "^8 || ^9",
+    "drupal/geolocation": "^3.0",
+    "drupal/address": "^1.8"
+  }
+}

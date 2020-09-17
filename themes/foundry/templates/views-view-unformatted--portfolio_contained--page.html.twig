@@ -1,0 +1,42 @@
+{#
+/**
+ * @file
+ * Default theme implementation to display a view of unformatted rows.
+ *
+ * Available variables:
+ * - title: The title of this group of rows. May be empty.
+ * - rows: A list of the view's row items.
+ *   - attributes: The row's HTML attributes.
+ *   - content: The row's content.
+ * - view: The view object.
+ * - default_row_class: A flag indicating whether default classes should be
+ *   used on rows.
+ *
+ * @see template_preprocess_views_view_unformatted()
+ *
+ * @ingroup themeable
+ */
+#}
+
+{% if title %}
+  <h3>{{ title }}</h3>
+{% endif %}
+
+<div class="row pb24">
+  <div class="col-sm-12 text-center">
+    <ul class="filters mb0">
+    </ul>
+  </div>
+</div>
+                    
+<div class="row masonry-loader">
+  <div class="col-sm-12 text-center">
+    <div class="spinner"></div>
+  </div>
+</div>
+
+<div class="row masonry masonryFlyIn">
+  {% for row in rows %}
+	  {{ row.content }}
+  {% endfor %}
+</div>

@@ -1,0 +1,114 @@
+jquery:
+  js:
+    js/jquery.min.js: {}
+global-styling:
+  version: 8.0
+  css:
+    base:
+      css/themify-icons.css: {}
+      css/flexslider.css: {}
+      css/lightbox.min.css: {}
+      css/ytplayer.css: {}
+      css/theme.css: {}
+      css/custom.css: {}
+      css/local.css: {}
+  js:
+    js/masonry.min.js: {}
+    js/flexslider.min.js: {}
+    js/lightbox.min.js: {}
+    js/twitterfetcher.min.js: {}
+    js/spectragram.min.js: {}
+    js/ytplayer.min.js: {}
+    js/countdown.min.js: {}
+    js/smooth-scroll.min.js: {}
+    js/parallax.min.js: {}
+    js/scripts.js: {}
+ckeditor_js:
+  version: 8.0
+  js:
+    js/ckeditor.config.js
+red-styling:
+  version: 8.0
+  css:
+    base:
+      css/theme-red.css: {}
+orange-styling:
+  version: 8.0
+  css:
+    base:
+      css/theme-orange.css: {}
+purple-styling:
+  version: 8.0
+  css:
+    base:
+      css/theme-purple.css: {}
+chipotle-styling:
+  version: 8.0
+  css:
+    base:
+      css/theme-chipotle.css: {}
+fire-styling:
+  version: 8.0
+  css:
+    base:
+      css/theme-fire.css: {}
+gunmetal-styling:
+  version: 8.0
+  css:
+    base:
+      css/theme-gunmetal.css: {}
+hyperblue-styling:
+  version: 8.0
+  css:
+    base:
+      css/theme-hyperblue.css: {}
+nature-styling:
+  version: 8.0
+  css:
+    base:
+      css/theme-nature.css: {}
+navy-styling:
+  version: 8.0
+  css:
+    base:
+      css/theme-navy.css: {}
+nearblack-styling:
+  version: 8.0
+  css:
+    base:
+      css/theme-nearblack.css: {}
+offyellow-styling:
+  version: 8.0
+  css:
+    base:
+      css/theme-offyellow.css: {}
+rose-styling:
+  version: 8.0
+  css:
+    base:
+      css/theme-rose.css: {}
+starup-styling:
+  version: 8.0
+  css:
+    base:
+      css/theme-starup.css: {}
+menuwhite-styling:
+  version: 8.0
+  css:
+    base:
+      css/menuwhite.css: {}
+transparant-styling:
+  version: 8.0
+  css:
+    base:
+      css/transparant.css: {}
+menudark-styling:
+  version: 8.0
+  css:
+    base:
+      css/menudark.css: {}
+menufix-styling:
+  version: 8.0
+  css:
+    base:
+      css/menufix.css: {}

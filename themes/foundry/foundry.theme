@@ -1,0 +1,114 @@
+<?php
+/**
+ * @file
+ * Foundry theme.
+ *
+ * Place your custom PHP code in this file.
+ */
+ 
+ 
+/**
+ * Implements hook_theme_suggestions_HOOK_alter().
+ */
+function foundry_theme_suggestions_page_alter(array &$suggestions, array $variables) {
+
+  if ($node = \Drupal::routeMatch()->getParameter('node')) {
+    $content_type = $node->bundle();
+    if ($content_type == 'full_page' ) {
+	  $suggestions[] = 'page__fullwidth';
+	}
+  }
+  /*
+  $view = \Drupal::service('entity.manager')->getStorage('view')->load('portfolio_wide');
+  if ($view) {
+    $suggestions[] = 'page__fullwidth';
+  }
+  if (($views_page = views_get_page_view()) && $views_page->name === "portfolio_wide") {
+    $suggestions[] = 'page__fullwidth';
+    }
+  */
+  $request = \Drupal::routeMatch()->getRouteObject()->getDefault('view_id');
+  if (!empty($request) && $request == 'portfolio_wide' ) {
+    $suggestions[] = 'page__fullwidth';
+  }
+}
+
+/**
+ * Add color, menu and theme settings
+ */
+function foundry_preprocess_page(&$variables) {
+  // Theme color
+  $color = theme_get_setting('theme_color');
+  if ($color != 'default') {
+    $variables['#attached']['library'][] = 'foundry/'.$color.'-styling';
+  }
+  
+  // Theme menu
+  $menu = theme_get_setting('theme_menu');
+  $variables['mainmenu_class'] = '';
+  if($menu == 'menu_transparant') {
+    $variables['mainmenu_class'] = 'absolute transparent';
+  }
+  elseif($menu == 'menudark') {
+    $variables['mainmenu_class'] = 'bg-dark';
+  }
+  else {
+    $variables['mainmenu_class'] = 'nabar-default';
+  }
+  $variables['mainmenu_transparent'] = '';
+  $current_path = \Drupal::service('path.current')->getPath();
+  $list_path_menu_transparant = explode(",",theme_get_setting('menu_transparant'));
+  if (in_array($current_path, $list_path_menu_transparant)) {    
+    $variables['mainmenu_transparent'] = 'absolute transparent';
+  }
+  
+}
+
+/**
+ * Process block content
+ */
+function foundry_theme_suggestions_block_alter(&$suggestions, $variables) {
+  $content = $variables['elements']['content'];
+  if (isset($content['#block_content']) && $content['#block_content'] instanceof \Drupal\block_content\BlockContentInterface) {
+    $suggestions[] = 'block__' . $content['#block_content']->bundle();
+  }
+   
+}
+
+/**
+ * Process block content
+ */
+function foundry_preprocess_block(&$variables) {
+
+  $request = \Drupal::request();
+  if ($route = $request->attributes->get(\Symfony\Cmf\Component\Routing\RouteObjectInterface::ROUTE_OBJECT)) {
+    $variables['title_block_output'] = \Drupal::service('title_resolver')->getTitle($request, $route);
+  }
+
+
+    $breadcrumbs_block = \Drupal::entityManager()->getStorage('block')->load('foundry_breadcrumbs');
+    if (!empty($breadcrumbs_block)){
+      $breadcrumbs_block_content = \Drupal::entityManager()
+        ->getViewBuilder('block')
+        ->view($breadcrumbs_block);
+      if ($breadcrumbs_block_content) {
+        // Add block content to build array
+        $variables['breadcrumbs_block_output'] = $breadcrumbs_block_content;
+      }
+    }
+
+}
+
+
+
+/**
+ * Implements hook_form_alter() to add classes to the search form.
+ */
+function foundry_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  /*if (in_array($form_id, ['search_block_form', 'search_form'])) {
+    $key = ($form_id == 'search_block_form') ? 'actions' : 'basic';
+    
+    $form[$key]['submit']['#access'] = false;
+  } */
+}
+
