@@ -1,4 +1,0 @@
-services:
-  instawidget.instalibrary:
-    class: Drupal\instawidget\InstaLibrary
-    arguments: ['@config.factory']

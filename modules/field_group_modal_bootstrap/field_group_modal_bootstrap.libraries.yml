@@ -1,5 +1,0 @@
-bootstrap:
-  js: {}
-  dependencies:
-    - bootstrap/drupal.dialog
-    - bootstrap/drupal.dialog.ajax

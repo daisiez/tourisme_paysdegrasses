@@ -74,7 +74,8 @@
         "drupal/views_slideshow": "^4.6",
         "drupal/views_templates": "^1.0",
         "drupal/webform": "^5.20",
-        "drupal/we_megamenu": "^1.5"
+        "drupal/we_megamenu": "^1.5",
+        "drupal/bootstrap": "^3.23"
        
     },
     "require-dev": {
