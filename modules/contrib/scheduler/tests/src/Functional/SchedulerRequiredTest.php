@@ -2,9 +2,6 @@
 
 namespace Drupal\Tests\scheduler\Functional;
 
-use Drupal\node\Entity\NodeType;
-use Drupal\Component\Utility\SafeMarkup;
-
 /**
  * Tests the options for scheduling dates to be required during add/edit.
  *
@@ -154,7 +151,8 @@ class SchedulerRequiredTest extends SchedulerBrowserTestBase {
       ],
     ];
 
-    $fields = \Drupal::entityManager()->getFieldDefinitions('node', $this->type);
+    $fields = $this->container->get('entity_field.manager')
+      ->getFieldDefinitions('node', $this->type);
 
     foreach ($test_cases as $test_case) {
       // Set required (un)publishing as stipulated by the test case.
@@ -207,18 +205,18 @@ class SchedulerRequiredTest extends SchedulerBrowserTestBase {
         'unpublish_on[0][value][time]' => '',
       ];
       // Add or edit the node.
-      $this->drupalPostForm($path, $values, t('Save'));
+      $this->drupalPostForm($path, $values, 'Save');
 
       // Check for the expected result.
       switch ($test_case['expected']) {
         case 'required':
           $string = sprintf('The %s date is required.', ucfirst($test_case['required']) . ' on');
-          $this->assertText($string, $test_case['id'] . '. ' . $test_case['message']);
+          $this->assertSession()->pageTextContains($string);
           break;
 
         case 'not required':
-          $string = sprintf('%s %s has been %s.', $this->typeName, SafeMarkup::checkPlain($title), ($test_case['operation'] == 'add' ? 'created' : 'updated'));
-          $this->assertText($string, $test_case['id'] . '. ' . $test_case['message']);
+          $string = sprintf('%s %s has been %s.', $this->typeName, $title, ($test_case['operation'] == 'add' ? 'created' : 'updated'));
+          $this->assertSession()->pageTextContains($string);
           break;
       }
     }

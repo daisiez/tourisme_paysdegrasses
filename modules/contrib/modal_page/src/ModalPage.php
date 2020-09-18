@@ -13,7 +13,7 @@ use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Component\Utility\Html;
-use Drupal\Core\Path\AliasManagerInterface;
+use Drupal\path_alias\AliasManagerInterface;
 
 /**
  * Modal Page Class.
@@ -81,31 +81,12 @@ class ModalPage {
   /**
    * The path alias manager.
    *
-   * @var \Drupal\Core\Path\AliasManagerInterface
+   * @var \Drupal\path_alias\AliasManagerInterface
    */
   protected $aliasManager;
 
   /**
    * Construct of Modal Page service.
-   *
-   * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
-   *   The entity type definition.
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_manager
-   *   The entity type manager.
-   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
-   *   The config factory.
-   * @param \Drupal\Core\Database\Connection $database
-   *   The database connection.
-   * @param Symfony\Component\HttpFoundation\RequestStack $request_stack
-   *   The current request.
-   * @param \Drupal\Core\Path\PathMatcherInterface $path_matcher
-   *   Path Matcher.
-   * @param \Drupal\Component\Uuid\UuidInterface $uuid_service
-   *   The UUID service.
-   * @param \Drupal\Core\Session\AccountProxyInterface $current_user
-   *   The user current.
-   * @param \Drupal\Core\Path\AliasManagerInterface $alias_manager
-   *   The path alias manager.
    */
   public function __construct(LanguageManagerInterface $language_manager, EntityTypeManagerInterface $entity_manager, ConfigFactoryInterface $config_factory, Connection $database, RequestStack $request_stack, PathMatcherInterface $path_matcher, UuidInterface $uuid_service, AccountProxyInterface $current_user, AliasManagerInterface $alias_manager) {
     $this->languageManager = $language_manager;
@@ -134,15 +115,23 @@ class ModalPage {
       $button = $this->clearText($modalToShow->ok_label_button->value);
     }
 
-    return [
+    $result = [
       'id' => $modalToShow->id->value,
       'title' => $this->clearText($modalToShow->title->value),
       'text' => $this->getAutheticatedUserName($this->clearText($modalToShow->body->value)),
       'delay_display' => $modalToShow->delay_display->value,
       'modal_size' => $modalToShow->modal_size->value,
       'button' => $button,
-      'do_not_show_again' => $this->t('Do not show again'),
+      'do_not_show_again' => $this->t("Don't show again"),
+      'open_modal_on_element_click' => $modalToShow->open_modal_on_element_click->value,
+      'auto_open' => $modalToShow->auto_open->value,
     ];
+
+    if (isset($modalToShow->enable_dont_show_again_option->value) && $modalToShow->enable_dont_show_again_option->value == FALSE) {
+      unset($result['do_not_show_again']);
+    }
+
+    return $result;
   }
 
   /**
@@ -168,18 +157,44 @@ class ModalPage {
     foreach ($modalIds as $modalId) {
 
       $modal = $modalStorage->load($modalId);
+
       if ($modal->published->value) {
         $modalToShow = ($modal->type->value === 'parameter') ?
           $this->getModalToShowByParameter($modal, $modalParameter) :
           $this->getModalToShowByPage($modal, $currentPath);
       }
 
-      if (!empty($modalToShow)) {
+      // Return Modal if there isn't restriction configured or if user has
+      // permission.
+      if (!empty($modalToShow) && (empty($modalToShow->roles->value) || $this->checkUserHasPermissionOnModal($modalToShow))) {
         return $modalToShow;
+      }
+
+    }
+
+    return FALSE;
+  }
+
+  /**
+   * Check if the Current User has Permission to Access Modal.
+   */
+  public function checkUserHasPermissionOnModal($modal) {
+
+    /** @var \Drupal\user\Entity\User $user */
+    $user = $this->entityTypeManager->getStorage('user')->load($this->currentUser->id());
+
+    if (empty($user) || empty($modal->roles)) {
+      return FALSE;
+    }
+
+    foreach ($modal->roles as $role) {
+
+      if (!empty($role->value) && $user->hasRole($role->value)) {
+        return TRUE;
       }
     }
 
-    return $modalToShow;
+    return FALSE;
   }
 
   /**
@@ -219,7 +234,7 @@ class ModalPage {
    *   The current path.
    */
   public function getCurrentPath() :string {
-    // $currentPath = ltrim($this->request->getRequestUri(), '/');
+    // $currentPath = ltrim($this->request->getRequestUri(), '/');.
     $currentPath = $this->request->getRequestUri();
     if ($this->pathMatcher->isFrontPage()) {
       $currentPath = '<front>';
@@ -250,10 +265,23 @@ class ModalPage {
         $path = Xss::filter($path);
       }
 
-      // $path = ltrim(trim($path), '/');
+      // $path = ltrim(trim($path), '/');.
       $path = trim($path);
       $currentPath = $this->aliasManager->getPathByAlias($currentPath);
+
       if ($currentPath == $path || $path == NULL) {
+        return $modal;
+      }
+
+      // Check wildcard.
+      if (strpos($path, '*') === FALSE) {
+        return FALSE;
+      }
+
+      $path = str_replace('/*', '', $path);
+      $path = str_replace('*', '', $path);
+
+      if (strpos($currentPath, $path) === 0) {
         return $modal;
       }
     }
@@ -317,8 +345,18 @@ class ModalPage {
     }
     else {
       $currentPath = $this->aliasManager->getPathByAlias($currentPath);
-      $groupCondition = $query->orConditionGroup()
-        ->condition('pages', '%' . $currentPath . '%', 'like');
+
+      $groupCondition = $query->orConditionGroup();
+
+      // Get all itens with wildcard.
+      $groupCondition->condition('pages', '%*%', 'like');
+
+      // Get all with current path.
+      $groupCondition->condition('pages', '%' . $currentPath . '%', 'like');
+
+      // Get all with NULL (all pages).
+      $groupCondition->condition('pages', NULL, 'IS');
+
       $query->condition($groupCondition);
     }
 

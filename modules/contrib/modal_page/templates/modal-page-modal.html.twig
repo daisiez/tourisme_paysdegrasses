@@ -8,7 +8,7 @@
  * - modal_size: size of modal to show.
  * - title: Title of modal.
  * - text: Text(Body) of modal.
- * - do_not_show_again: Do not show again variable for modal.
+ * - do_not_show_again: Don't show again variable for modal.
  * - delay_display: Delay to display variable for modal.
  * - button: Button text for modal.
  *
@@ -28,7 +28,7 @@
         </div>
         <div class="modal-footer modal-page-footer">
           {% if do_not_show_again %}
-              <input type="checkbox" class="modal-page-please-do-not-show-again" value="{{ id }}"> {{ do_not_show_again }}
+              <label class ="modal-dont-show-again-label"><input type="checkbox" class="modal-page-please-do-not-show-again" value="{{ id }}"> {{ do_not_show_again }}</label>
           {% endif %}
           <input type="hidden" id="delay_display" name="delay_display" value="{{ delay_display|raw }}" />
           <button type="button" class="btn btn-default js-modal-page-ok-buttom" data-dismiss="modal">{{ button }}</button>

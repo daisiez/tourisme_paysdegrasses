@@ -7,6 +7,8 @@ use Drupal\Core\Link;
 use Drupal\Core\Url;
 
 /**
+ * Class IframeAsurlFormatter.
+ *
  * @FieldFormatter(
  *  id = "iframe_asurl",
  *  label = @Translation("A link with the given title"),
@@ -19,7 +21,7 @@ class IframeAsurlFormatter extends IframeDefaultFormatter {
    * {@inheritdoc}
    */
   public function viewElements(FieldItemListInterface $items, $langcode) {
-    $elements = array();
+    $elements = [];
 
     foreach ($items as $delta => $item) {
       if (empty($item->url)) {
@@ -28,11 +30,11 @@ class IframeAsurlFormatter extends IframeDefaultFormatter {
       if (!isset($item->title)) {
         $item->title = '';
       }
-      $linktext = !empty($item->title)? $item->title : $item->url;
-      $elements[$delta] = array(
-        '#markup' =>  Link::fromTextAndUrl($linktext, Url::fromUri($item->url, ['title' => $item->title]))->toString(),
-        '#allowed_tags' => array('iframe', 'a', 'h3'),
-      );
+      $linktext = !empty($item->title) ? $item->title : $item->url;
+      $elements[$delta] = [
+        '#markup' => Link::fromTextAndUrl($linktext, Url::fromUri($item->url, ['title' => $item->title]))->toString(),
+        '#allowed_tags' => ['iframe', 'a', 'h3'],
+      ];
     }
     return $elements;
   }

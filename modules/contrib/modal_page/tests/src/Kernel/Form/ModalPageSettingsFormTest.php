@@ -2,7 +2,6 @@
 
 namespace Drupal\Tests\modal_page\Kernel\Form;
 
-use Drupal\Core\Form\FormInterface;
 use Drupal\Core\Form\FormState;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\Core\StringTranslation\StringTranslationTrait;

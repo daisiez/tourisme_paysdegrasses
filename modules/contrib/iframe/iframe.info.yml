@@ -1,16 +1,15 @@
 name: Iframe
 type: module
-description: 'Defines simple iframe field type.'
+description: 'Defines a simple iframe field type.'
 package: Field types
-# version: 8.x-0.2
-# core: 8.x
+core: 8.x
+core_version_requirement: ^8 || ^9
 dependencies:
-  - field
-  - link
+  - drupal:field
+  - drupal:link
 required: false
 
-# Information added by Drupal.org packaging script on 2017-02-14
-version: '8.x-1.7'
-core: '8.x'
+# Information added by Drupal.org packaging script on 2020-05-03
+version: '8.x-1.19'
 project: 'iframe'
-datestamp: 1487115785
+datestamp: 1588528167

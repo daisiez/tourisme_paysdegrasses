@@ -32,13 +32,12 @@ interface SharethisManagerInterface {
    * @return array
    *   Return array renderable by renderSpans().
    */
-  public function widgetContents($array);
+  public function widgetContents(array $array);
 
   /**
    * Include st js scripts.
    */
   public function sharethisIncludeJs();
-
 
   /**
    * Function is creating options to be passed to stLight.
@@ -49,8 +48,7 @@ interface SharethisManagerInterface {
    * @return array
    *   An array of options.
    */
-  public function getShareThisLightOptions($data_options);
-
+  public function getShareThisLightOptions(array $data_options);
 
   /**
    * Converts given value to boolean.
@@ -78,6 +76,6 @@ interface SharethisManagerInterface {
    * @return array
    *   Array with options, title and path.
    */
-  public function renderSpans($array, $title, $string);
+  public function renderSpans(array $array, $title, $string);
 
 }

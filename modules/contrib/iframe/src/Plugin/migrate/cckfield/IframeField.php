@@ -2,15 +2,19 @@
 
 namespace Drupal\iframe\Plugin\migrate\cckfield;
 
-use Drupal\migrate\Entity\MigrationInterface;
-use Drupal\migrate_drupal\Plugin\migrate\cckfield\CckFieldPluginBase;
+use Drupal\migrate\Plugin\MigrationInterface;
+use Drupal\migrate_drupal\Plugin\migrate\field\FieldPluginBase;
 
 /**
+ * Class IframeField.
+ *
  * @MigrateCckField(
- *   id = "iframe"
+ *   id = "iframe",
+ *   source_module = "iframe",
+ *   destination_module = "iframe"
  * )
  */
-class IframeField extends CckFieldPluginBase {
+class IframeField extends FieldPluginBase {
 
   /**
    * {@inheritdoc}
@@ -30,11 +34,11 @@ class IframeField extends CckFieldPluginBase {
    * {@inheritdoc}
    */
   public function processCckFieldValues(MigrationInterface $migration, $field_name, $data) {
-      $process = [
-        'plugin' => 'd6_cck_iframe',
-        'source' => $field_name,
-      ];
-      $migration->mergeProcessOfProperty($field_name, $process);
+    $process = [
+      'plugin' => 'd6_cck_iframe',
+      'source' => $field_name,
+    ];
+    $migration->mergeProcessOfProperty($field_name, $process);
   }
 
 }

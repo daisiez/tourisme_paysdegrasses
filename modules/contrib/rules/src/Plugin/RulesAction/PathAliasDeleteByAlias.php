@@ -14,15 +14,15 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   id = "rules_path_alias_delete_by_alias",
  *   label = @Translation("Delete path alias"),
  *   category = @Translation("Path"),
- *   context = {
+ *   context_definitions = {
  *     "alias" = @ContextDefinition("string",
  *       label = @Translation("Existing system path alias"),
- *       description = @Translation("Specifies the existing path alias you wish to delete, for example 'about/team'. Use a relative path and do not add a trailing slash.")
- *     )
+ *       description = @Translation("Specifies the existing path alias you wish to delete. For example, '/about/team'. Use an absolute path and do not add a trailing slash.")
+ *     ),
  *   }
  * )
  *
- * @todo: Add access callback information from Drupal 7.
+ * @todo Add access callback information from Drupal 7.
  */
 class PathAliasDeleteByAlias extends RulesActionBase implements ContainerFactoryPluginInterface {
 

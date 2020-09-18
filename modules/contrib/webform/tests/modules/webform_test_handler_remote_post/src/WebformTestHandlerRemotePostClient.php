@@ -21,7 +21,7 @@ class WebformTestHandlerRemotePostClient extends Client {
       return parent::request($method, $uri, $options);
     }
 
-    if ($method == 'get') {
+    if ($method === 'get') {
       parse_str(parse_url($uri, PHP_URL_QUERY), $params);
     }
     else {
@@ -29,7 +29,7 @@ class WebformTestHandlerRemotePostClient extends Client {
     }
 
     $response_type = (isset($params['response_type'])) ? $params['response_type'] : 200;
-    $operation = str_replace('http://webform-test-handler-remote-post/', '', $uri);
+    $operation = ltrim(parse_url($uri, PHP_URL_PATH), '/');
     $random = new Random();
     // Handle 404 errors.
     switch ($response_type) {
@@ -37,11 +37,16 @@ class WebformTestHandlerRemotePostClient extends Client {
       case 404:
         return new Response(404, [], 'File not found');
 
+      // 405 Method Not Allowed.
+      case 405:
+        return new Response(405, [], 'Method Not Allowed');
+
       // 401 Unauthorized.
       case 401:
         $status = 401;
         $headers = ['Content-Type' => ['application/json']];
         $json = [
+          'method' => $method,
           'status' => 'unauthorized',
           'message' => (string) new FormattableMarkup('Unauthorized to process @type request.', ['@type' => $operation]),
           'options' => $options,
@@ -53,9 +58,22 @@ class WebformTestHandlerRemotePostClient extends Client {
         $status = 500;
         $headers = ['Content-Type' => ['application/json']];
         $json = [
+          'method' => $method,
           'status' => 'fail',
           'message' => (string) new FormattableMarkup('Failed to process @type request.', ['@type' => $operation]),
           'options' => $options,
+        ];
+        return new Response($status, $headers, Json::encode($json));
+
+      case 201:
+        $status = 201;
+        $headers = ['Content-Type' => ['application/json']];
+        $json = [
+          'method' => $method,
+          'status' => 'success',
+          'message' => (string) new FormattableMarkup('Process @type request.', ['@type' => $operation]),
+          'options' => $options,
+          'confirmation_number' => $random->name(20, TRUE),
         ];
         return new Response($status, $headers, Json::encode($json));
 
@@ -65,6 +83,7 @@ class WebformTestHandlerRemotePostClient extends Client {
         $status = 200;
         $headers = ['Content-Type' => ['application/json']];
         $json = [
+          'method' => $method,
           'status' => 'success',
           'message' => (string) new FormattableMarkup('Processed @type request.', ['@type' => $operation]),
           'options' => $options,

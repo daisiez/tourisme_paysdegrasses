@@ -1,6 +1,5 @@
 # Declaration of Rules routings.
 
-
 ### Rules settings form
 rules.settings:
   path: '/admin/config/workflow/rules/settings'
@@ -9,7 +8,6 @@ rules.settings:
     _title: 'Rules settings'
   requirements:
     _permission: 'administer rules'
-
 
 ### Rules Reactions
 entity.rules_reaction_rule.collection:
@@ -48,6 +46,28 @@ entity.rules_reaction_rule.delete_form:
     _rules_ui: rules.reaction_rules
   requirements:
     _permission: 'administer rules+administer rules reactions'
+
+entity.rules_reaction_rule.enable:
+  path: '/admin/config/workflow/rules/reactions/enable/{rules_reaction_rule}'
+  defaults:
+    _controller: '\Drupal\rules\Controller\RulesReactionController::enableConfig'
+    _title: 'Enable reaction rule'
+  options:
+    _rules_ui: rules.reaction_rules
+  requirements:
+    _permission: 'administer rules+administer rules reactions'
+    _csrf_token: 'TRUE'
+
+entity.rules_reaction_rule.disable:
+  path: '/admin/config/workflow/rules/reactions/disable/{rules_reaction_rule}'
+  defaults:
+    _controller: '\Drupal\rules\Controller\RulesReactionController::disableConfig'
+    _title: 'Disable reaction rule'
+  options:
+    _rules_ui: rules.reaction_rules
+  requirements:
+    _permission: 'administer rules+administer rules reactions'
+    _csrf_token: 'TRUE'
 
 ### Rules Components
 entity.rules_component.collection:

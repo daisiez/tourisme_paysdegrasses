@@ -1,0 +1,19 @@
+uuid: 93a96bc1-8c62-45fe-a9ce-b2f6791a8ad1
+langcode: fr
+status: true
+dependencies:
+  module:
+    - apidae_tourisme_dates
+    - node
+id: node.field_apidae_dates
+field_name: field_apidae_dates
+entity_type: node
+type: apidae_date
+settings: {  }
+module: apidae_tourisme_dates
+locked: false
+cardinality: -1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

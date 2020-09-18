@@ -7,6 +7,8 @@ use Drupal\Core\Entity\TypedData\EntityDataDefinition;
 use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\TypedData\DataDefinition;
 use Drupal\KernelTests\Core\Entity\EntityKernelTestBase;
+use Drupal\file\Entity\File;
+use Drupal\filter\Entity\FilterFormat;
 use Drupal\node\Entity\Node;
 
 /**
@@ -37,19 +39,45 @@ class DataFilterTest extends EntityKernelTestBase {
    *
    * @var array
    */
-  public static $modules = ['typed_data', 'node'];
+  public static $modules = ['typed_data', 'node', 'file', 'filter'];
 
   /**
    * {@inheritdoc}
    */
-  public function setUp() {
+  protected function setUp() {
     parent::setUp();
     $this->typedDataManager = $this->container->get('typed_data_manager');
     $this->dataFilterManager = $this->container->get('plugin.manager.typed_data_filter');
 
     // Make sure default date formats are available
     // for testing the format_date filter.
-    $this->installConfig(['system']);
+    $this->installConfig(['system', 'filter']);
+
+    $this->installEntitySchema('file');
+    $this->installSchema('file', ['file_usage']);
+
+    // Set up the filter formats used by this test.
+    $basic_html_format = FilterFormat::create([
+      'format' => 'basic_html',
+      'name' => 'Basic HTML',
+      'filters' => [
+        'filter_html' => [
+          'status' => 1,
+          'settings' => [
+            'allowed_html' => '<p> <br> <strong> <a> <em> <code>',
+          ],
+        ],
+      ],
+    ]);
+    $basic_html_format->save();
+
+    $full_html_format = FilterFormat::create([
+      'format' => 'full_html',
+      'name' => 'Full HTML',
+      'weight' => 1,
+      'filters' => [],
+    ]);
+    $full_html_format->save();
   }
 
   /**
@@ -81,8 +109,8 @@ class DataFilterTest extends EntityKernelTestBase {
 
     $fails = $filter->validateArguments($data->getDataDefinition(), []);
     $this->assertEquals(1, count($fails));
-    $this->assertContains('Missing arguments', (string) $fails[0]);
-    $fails = $filter->validateArguments($data->getDataDefinition(), [new \StdClass()]);
+    $this->assertStringContainsString('Missing arguments', (string) $fails[0]);
+    $fails = $filter->validateArguments($data->getDataDefinition(), [new \stdClass()]);
     $this->assertEquals(1, count($fails));
     $this->assertEquals('This value should be of the correct primitive type.', $fails[0]);
 
@@ -136,6 +164,44 @@ class DataFilterTest extends EntityKernelTestBase {
   }
 
   /**
+   * @covers \Drupal\typed_data\Plugin\TypedDataFilter\FormatTextFilter
+   */
+  public function testFormatTextFilter() {
+    $filter = $this->dataFilterManager->createInstance('format_text');
+    $data = $this->typedDataManager->create(DataDefinition::create('string'), '<b>Test <em>format_text</em> filter with <code>full_html</code> plugin</b>');
+
+    $this->assertTrue($filter->canFilter($data->getDataDefinition()));
+    $this->assertFalse($filter->canFilter(DataDefinition::create('any')));
+
+    $this->assertEquals('string', $filter->filtersTo($data->getDataDefinition(), ['full_html'])->getDataType());
+
+    $fails = $filter->validateArguments($data->getDataDefinition(), []);
+    $this->assertEquals(1, count($fails));
+    $this->assertStringContainsString('Missing arguments', (string) $fails[0]);
+    $fails = $filter->validateArguments($data->getDataDefinition(), [new \stdClass()]);
+    $this->assertEquals(1, count($fails));
+    $this->assertEquals('This value should be of the correct primitive type.', $fails[0]);
+
+    $this->assertEquals(
+      '<b>Test <em>format_text</em> filter with <code>full_html</code> plugin</b>',
+      $filter->filter($data->getDataDefinition(), $data->getValue(), ['full_html'])
+    );
+
+    $data->setValue('<b>Test <em>format_text</em> filter with <code>basic_html</code> plugin</b>');
+    $this->assertEquals(
+      'Test <em>format_text</em> filter with <code>basic_html</code> plugin',
+      $filter->filter($data->getDataDefinition(), $data->getValue(), ['basic_html'])
+    );
+
+    // Test the fallback filter.
+    $data->setValue('<b>Test <em>format_text</em> filter with <code>plain_text</code> plugin</b>');
+    $this->assertEquals(
+      "<p>&lt;b&gt;Test &lt;em&gt;format_text&lt;/em&gt; filter with &lt;code&gt;plain_text&lt;/code&gt; plugin&lt;/b&gt;</p>\n",
+      $filter->filter($data->getDataDefinition(), $data->getValue(), ['plain_text'])
+    );
+  }
+
+  /**
    * @covers \Drupal\typed_data\Plugin\TypedDataFilter\StripTagsFilter
    */
   public function testStripTagsFilter() {
@@ -154,7 +220,7 @@ class DataFilterTest extends EntityKernelTestBase {
    * @covers \Drupal\typed_data\Plugin\TypedDataFilter\EntityUrlFilter
    */
   public function testEntityUrlFilter() {
-    /* @var $node \Drupal\node\NodeInterface */
+    /* @var \Drupal\node\NodeInterface $node */
     $node = Node::create([
       'title' => 'Test node',
       'type' => 'page',
@@ -173,6 +239,31 @@ class DataFilterTest extends EntityKernelTestBase {
     // Test the output of the filter.
     $output = $filter->filter($data->getDataDefinition(), $data->getValue(), []);
     $this->assertEquals($node->toUrl('canonical', ['absolute' => TRUE])->toString(), $output);
+  }
+
+  /**
+   * @covers \Drupal\typed_data\Plugin\TypedDataFilter\EntityUrlFilter
+   */
+  public function testFileEntityUrlFilter() {
+    file_put_contents('public://example.txt', $this->randomMachineName());
+    /* @var \Drupal\file\FileInterface $file */
+    $file = File::create([
+      'uri' => 'public://example.txt',
+    ]);
+    $file->save();
+
+    $filter = $this->dataFilterManager->createInstance('entity_url');
+    $data = $this->typedDataManager->create(EntityDataDefinition::create('file'));
+    $data->setValue($file);
+
+    $this->assertTrue($filter->canFilter($data->getDataDefinition()));
+    $this->assertFalse($filter->canFilter(DataDefinition::create('any')));
+
+    $this->assertEquals('uri', $filter->filtersTo($data->getDataDefinition(), [])->getDataType());
+
+    // Test the output of the filter.
+    $output = $filter->filter($data->getDataDefinition(), $data->getValue(), []);
+    $this->assertEquals($file->createFileUrl(FALSE), $output);
   }
 
 }

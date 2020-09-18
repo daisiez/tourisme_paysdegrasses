@@ -1,11 +1,36 @@
-Apidae Tourisme 2.0.0-dev
+Apidae Tourisme 2.1.0-dev
 --------------------------
 
-Apidae Tourisme 2.0.1, 2020-06-23
+Apidae Tourisme 2.1.2, 2020-07-21
+- Date - fix issue on date widget label (thx turboconnard)
+
+Apidae Tourisme 2.1.1, 2020-07-21
+- Date - fix issue on date widget (thx turboconnard)
+
+Apidae Tourisme 2.1.0, 2020-07-20
+Apidae Tourisme 2.1.0-beta5, 2020-07-20
+--------------------------
+- Sync - update error logging format
+- Config - add validation on auth settings and selections ids
+
+Apidae Tourisme 2.1.0-beta4, 2020-07-20
+--------------------------
+- Config / Selections, update field to textarea and  config storage to array instead of string - #3160253
+
+Apidae Tourisme 2.1.0-beta3, 2020-07-16
 --------------------------
 - Update view « Objets Touristiques »
+- Add option to resize media before saving #3159550
 
-Apidae Tourisme 2.0.0, 2020-06-19
+Apidae Tourisme 2.1.0-beta2, 2020-06-22
+--------------------------
+- Date : fix widget and formatter label
+
+Apidae Tourisme 2.1.0-beta1, 2020-06-19
+--------------------------
+- Add date support in submodule
+
+Apidae Tourisme 2.0.0
 --------------------------
 - Tagging first stable version \o/
 - Fix a typo in code sample : ApidaeNodePresaveSubscriber

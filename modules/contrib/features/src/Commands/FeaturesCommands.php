@@ -9,6 +9,7 @@ use Drupal\Core\Config\StorageInterface;
 use Drupal\features\Exception\DomainException;
 use Drupal\features\Exception\InvalidArgumentException;
 use Drupal\features\FeaturesAssignerInterface;
+use Drupal\features\FeaturesBundleInterface;
 use Drupal\features\FeaturesGeneratorInterface;
 use Drupal\features\FeaturesManagerInterface;
 use Drupal\features\Plugin\FeaturesGeneration\FeaturesGenerationWrite;
@@ -21,7 +22,7 @@ use Drush\Utils\StringUtils;
  */
 class FeaturesCommands extends DrushCommands {
 
-  const OPTIONS =[
+  const OPTIONS = [
     'bundle' => NULL,
   ];
 
@@ -246,7 +247,7 @@ class FeaturesCommands extends DrushCommands {
   public function listPackages($package_name = NULL, $options = self::OPTIONS_LIST) {
     $assigner = $this->featuresOptions($options);
     $current_bundle = $assigner->getBundle();
-    $namespace = $current_bundle->isDefault() ? '' : $current_bundle->getMachineName();
+    $namespace = $current_bundle->isDefault() ? FeaturesBundleInterface::DEFAULT_BUNDLE : $current_bundle->getMachineName();
 
     $manager = $this->manager;
     $packages = $manager->getPackages();
@@ -263,9 +264,7 @@ class FeaturesCommands extends DrushCommands {
           $state = FeaturesManagerInterface::STATE_OVERRIDDEN;
         }
 
-        $packageState = ($state != FeaturesManagerInterface::STATE_DEFAULT)
-          ? $manager->stateLabel($state)
-          : '';
+        $packageState = ($state != FeaturesManagerInterface::STATE_DEFAULT) ? $manager->stateLabel($state) : '';
 
         $result[$package->getMachineName()] = [
           'name' => $package->getName(),
@@ -312,7 +311,7 @@ class FeaturesCommands extends DrushCommands {
   public function importAll($options = self::OPTIONS_IMPORT_ALL) {
     $assigner = $this->featuresOptions($options);
     $currentBundle = $assigner->getBundle();
-    $namespace = $currentBundle->isDefault() ? '' : $currentBundle->getMachineName();
+    $namespace = $currentBundle->isDefault() ? FeaturesBundleInterface::DEFAULT_BUNDLE : $currentBundle->getMachineName();
 
     $manager = $this->manager;
     $packages = $manager->getPackages();
@@ -386,7 +385,7 @@ class FeaturesCommands extends DrushCommands {
     if (empty($packages)) {
       $packages = $all_packages;
       $dt_args = ['@modules' => implode(', ', array_keys($packages))];
-      drush_print(dt('The following extensions will be exported: @modules',
+      $this->output()->writeln(dt('The following extensions will be exported: @modules',
         $dt_args));
       if (!$this->io()->confirm('Do you really want to continue?')) {
         throw new UserAbortException();
@@ -400,7 +399,7 @@ class FeaturesCommands extends DrushCommands {
     if ($existing_packages = $manager->listPackageDirectories($packages,
       $current_bundle)) {
       foreach ($existing_packages as $name => $directory) {
-        drush_print(dt("The extension @name already exists at @directory.",
+        $this->output()->writeln(dt("The extension @name already exists at @directory.",
           ['@name' => $name, '@directory' => $directory]));
       }
       // Apparently, format_plural is not always available.
@@ -471,7 +470,7 @@ class FeaturesCommands extends DrushCommands {
       // If any packages exist, confirm before overwriting.
       if ($existing_packages = $manager->listPackageDirectories($packages)) {
         foreach ($existing_packages as $name => $directory) {
-          drush_print(dt("The extension @name already exists at @directory.",
+          $this->output()->writeln(dt("The extension @name already exists at @directory.",
             ['@name' => $name, '@directory' => $directory]));
         }
         // Apparently, format_plural is not always available.
@@ -490,7 +489,7 @@ class FeaturesCommands extends DrushCommands {
           $current_bundle);
         list($full_name, $path) = $manager->getExportInfo($package,
           $current_bundle);
-        drush_print(dt('Will create a new extension @name in @directory',
+        $this->output()->writeln(dt('Will create a new extension @name in @directory',
           ['@name' => $full_name, '@directory' => $path]));
         if (!$this->io()->confirm(dt('Do you really want to continue?'))) {
           throw new UserAbortException();
@@ -617,12 +616,13 @@ class FeaturesCommands extends DrushCommands {
     $formatter->trailing_context_lines = $lines;
     $formatter->show_header = FALSE;
 
-    if (drush_get_context('DRUSH_NOCOLOR')) {
-      $red = $green = "%s";
-    }
-    else {
+    if ($this->output()->isDecorated()) {
       $red = "\033[31;40m\033[1m%s\033[0m";
       $green = "\033[0;32;40m\033[1m%s\033[0m";
+    }
+    else {
+      $red = '%s';
+      $green = "%s";
     }
 
     $overrides = $manager->detectOverrides($feature);
@@ -719,7 +719,7 @@ class FeaturesCommands extends DrushCommands {
 
     // Determine if -y was supplied. If so, we can filter out needless output
     // from this command.
-    $skip_confirmation = drush_get_context('DRUSH_AFFIRMATIVE');
+    $skip_confirmation = $options['yes'];
     $manager = $this->manager;
 
     // Parse list of arguments.

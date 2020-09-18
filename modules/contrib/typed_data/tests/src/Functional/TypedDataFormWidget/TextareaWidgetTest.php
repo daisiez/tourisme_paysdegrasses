@@ -6,11 +6,6 @@ use Drupal\Core\Plugin\Context\ContextDefinition;
 use Drupal\Core\TypedData\DataDefinition;
 use Drupal\Core\TypedData\ListDataDefinition;
 use Drupal\Core\TypedData\MapDataDefinition;
-use Drupal\Core\TypedData\TypedDataTrait;
-use Drupal\Tests\BrowserTestBase;
-use Drupal\Tests\typed_data\Traits\BrowserTestHelpersTrait;
-use Drupal\typed_data\Util\StateTrait;
-use Drupal\typed_data\Widget\FormWidgetManagerTrait;
 
 /**
  * Class TextInputWidgetTest.
@@ -19,12 +14,7 @@ use Drupal\typed_data\Widget\FormWidgetManagerTrait;
  *
  * @coversDefaultClass \Drupal\typed_data\Plugin\TypedDataFormWidget\TextareaWidget
  */
-class TextareaWidgetTest extends BrowserTestBase {
-
-  use BrowserTestHelpersTrait;
-  use FormWidgetManagerTrait;
-  use StateTrait;
-  use TypedDataTrait;
+class TextareaWidgetTest extends FormWidgetBrowserTestBase {
 
   /**
    * The tested form widget.
@@ -34,19 +24,9 @@ class TextareaWidgetTest extends BrowserTestBase {
   protected $widget;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
-   */
-  public static $modules = [
-    'typed_data',
-    'typed_data_widget_test',
-  ];
-
-  /**
    * {@inheritdoc}
    */
-  public function setUp() {
+  protected function setUp() {
     parent::setUp();
     $this->widget = $this->getFormWidgetManager()->createInstance('textarea');
   }
@@ -77,24 +57,63 @@ class TextareaWidgetTest extends BrowserTestBase {
    */
   public function testFormEditing() {
     $context_definition = ContextDefinition::create('string')
-      ->setLabel('Example string')
-      ->setDescription('Some example string')
-      ->setDefaultValue('default1');
-    $this->getState()->set('typed_data_widgets.definition', $context_definition);
+      ->setLabel('Example textarea')
+      ->setDescription('Some example textarea')
+      ->setDefaultValue('A string longer than eight characters');
+    $this->container->get('state')->set('typed_data_widgets.definition', $context_definition);
 
     $this->drupalLogin($this->createUser([], NULL, TRUE));
     $path = 'admin/config/user-interface/typed-data-widgets/' . $this->widget->getPluginId();
     $this->drupalGet($path);
 
-    $this->assertSession()->elementTextContains('css', 'label[for=edit-data-value]', $context_definition->getLabel());
-    $this->assertSession()->elementTextContains('css', 'div[id=edit-data-value--description]', $context_definition->getDescription());
-    $this->assertSession()->fieldValueEquals('data[value]', $context_definition->getDefaultValue());
+    /** @var \Drupal\Tests\WebAssert $assert */
+    $assert = $this->assertSession();
+    $assert->elementTextContains('css', 'label[for=edit-data-value]', $context_definition->getLabel());
+    $assert->elementTextContains('css', 'div[id=edit-data-value--description]', $context_definition->getDescription());
+    $assert->fieldValueEquals('data[value]', $context_definition->getDefaultValue());
 
     $this->fillField('data[value]', 'jump');
     $this->pressButton('Submit');
 
     $this->drupalGet($path);
-    $this->assertSession()->fieldValueEquals('data[value]', 'jump');
+    $assert->fieldValueEquals('data[value]', 'jump');
+  }
+
+  /**
+   * @covers ::form
+   * @covers ::flagViolations
+   */
+  public function testValidation() {
+    $context_definition = ContextDefinition::create('text')
+      ->setLabel('Test text area')
+      ->setDescription('Enter text, minimum 40 characters.');
+    // Omitting the 'allowEmptyString' argument in Symfony 4+ (which is used in
+    // Drupal 9.0+) gives a deprecation warning, but this option does not exist
+    // in Symfony 3.4 (which is used in Drupal 8.8 and 8.9).
+    // @see https://www.drupal.org/project/typed_data/issues/3161000
+    if (version_compare(\Drupal::VERSION, '9.0', '>=')) {
+      $context_definition->addConstraint('Length', ['min' => 40, 'allowEmptyString' => FALSE]);
+    }
+    else {
+      $context_definition->addConstraint('Length', ['min' => 40]);
+    }
+    $this->container->get('state')->set('typed_data_widgets.definition', $context_definition);
+
+    $this->drupalLogin($this->createUser([], NULL, TRUE));
+    $path = 'admin/config/user-interface/typed-data-widgets/' . $this->widget->getPluginId();
+    $this->drupalGet($path);
+
+    // Try to save with text that is too short.
+    $this->fillField('data[value]', $this->randomString(20));
+    $this->pressButton('Submit');
+
+    /** @var \Drupal\Tests\WebAssert $assert */
+    $assert = $this->assertSession();
+    $assert->fieldExists('data[value]')->hasClass('error');
+
+    // Make sure the changes have not been saved.
+    $this->drupalGet($path);
+    $assert->fieldValueEquals('data[value]', $context_definition->getDefaultValue());
   }
 
 }

@@ -1,0 +1,5 @@
+services:
+  apidae_tourisme_examples.apidae_query_builder_subscriber:
+    class: 'Drupal\apidae_tourisme_examples\EventSubscriber\ApidaeQueryBuilderSubscriber'
+    tags:
+      - { name: 'event_subscriber' }

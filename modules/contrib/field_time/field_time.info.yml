@@ -1,0 +1,13 @@
+name: 'Field Time'
+type: module
+description: 'Provides a Time form element and Time and TimeRange entity field for Drupal 8 & 9.'
+core: 8.x
+core_version_requirement: ^8 || ^9
+package: 'Field types'
+dependencies:
+  - drupal:datetime
+
+# Information added by Drupal.org packaging script on 2020-06-19
+version: '1.0.0-beta1'
+project: 'field_time'
+datestamp: 1592572769

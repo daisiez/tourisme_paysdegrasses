@@ -8,6 +8,7 @@ use Drupal\Core\Site\Settings;
 
 /**
  * Defines a features bundle.
+ *
  * @todo Better description
  *
  * @ConfigEntityType(
@@ -36,35 +37,50 @@ use Drupal\Core\Site\Settings;
 class FeaturesBundle extends ConfigEntityBase implements FeaturesBundleInterface {
 
   /**
+   * The variable.
+   *
    * @var string
    */
   protected $name;
 
   /**
+   * The variable.
+   *
    * @var
    */
   protected $machine_name;
 
   /**
+   * The variable.
+   *
    * @var string
    */
   protected $description;
 
   /**
+   * The variable.
+   *
    * @var string[]
    */
   protected $assignments = [];
 
   /**
+   * The variable.
+   *
    * @var string
    */
   protected $profile_name;
 
   /**
+   * The variable.
+   *
    * @var bool
    */
   protected $is_profile = FALSE;
 
+  /**
+   * {@inheritDoc}
+   */
   public function id() {
     // @todo Convert it to $this->id in the long run.
     return $this->getMachineName();
@@ -193,7 +209,7 @@ class FeaturesBundle extends ConfigEntityBase implements FeaturesBundleInterface
    * {@inheritdoc}
    */
   public function getEnabledAssignments() {
-    $list = array();
+    $list = [];
     foreach ($this->assignments as $method_id => $method) {
       if ($method['enabled']) {
         $list[$method_id] = $method_id;
@@ -221,7 +237,7 @@ class FeaturesBundle extends ConfigEntityBase implements FeaturesBundleInterface
    * {@inheritdoc}
    */
   public function getAssignmentWeights() {
-    $list = array();
+    $list = [];
     foreach ($this->assignments as $method_id => $method) {
       $list[$method_id] = $method['weight'];
     }
@@ -240,9 +256,10 @@ class FeaturesBundle extends ConfigEntityBase implements FeaturesBundleInterface
   }
 
   /**
-   * Return array of default settings for the given plugin method
+   * Return array of default settings for the given plugin method.
    *
    * @param $method_id
+   *
    * @return array
    */
   protected function getDefaultSettings($method_id) {
@@ -275,7 +292,7 @@ class FeaturesBundle extends ConfigEntityBase implements FeaturesBundleInterface
       }
     }
     else {
-      $list = array();
+      $list = [];
       foreach (array_keys($this->assignments) as $method_id) {
         $list[$method_id] = $this->getAssignmentSettings($method_id);
       }

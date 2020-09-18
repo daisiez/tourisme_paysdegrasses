@@ -5,11 +5,12 @@ namespace Drupal\rules_test\Plugin\Condition;
 use Drupal\rules\Core\RulesConditionBase;
 
 /**
- * Provides an always FALSE test condition.
+ * Provides an always-FALSE test condition.
  *
  * @Condition(
  *   id = "rules_test_false",
- *   label = @Translation("Test condition returning false")
+ *   label = @Translation("Test condition returning false"),
+ *   category = @Translation("Tests")
  * )
  */
 class TestConditionFalse extends RulesConditionBase {

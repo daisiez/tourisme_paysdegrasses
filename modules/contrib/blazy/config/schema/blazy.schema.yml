@@ -24,6 +24,12 @@ blazy.settings:
         saveViewportOffsetDelay:
           type: integer
           label: 'Save viewport offset delay'
+        validateDelay:
+          type: integer
+          label: 'Set validate delay'
+        container:
+          type: string
+          label: 'Scrolling container'
 
 blazy_base:
   type: mapping
@@ -47,3 +53,7 @@ field.formatter.settings.blazy_file:
 field.formatter.settings.blazy_video:
   type: blazy_base
   label: 'Blazy image with VEF display format settings'
+
+field.formatter.settings.blazy_media:
+  type: blazy_base
+  label: 'Blazy image with ME display format settings'

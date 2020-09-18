@@ -43,7 +43,7 @@ class ModalPageTest extends KernelTestBase {
     $this->pathMatcher = $this->container->get('path.matcher');
     $this->uuid = $this->container->get('uuid');
     $this->currentUser = $this->container->get('current_user');
-    $this->aliasManager = $this->container->get('path.alias_manager');
+    $this->aliasManager = $this->container->get('path_alias.manager');
 
     $this->modalPage = new ModalPage(
       $this->languageManager, $this->entityTypeManager, $this->configFactory,

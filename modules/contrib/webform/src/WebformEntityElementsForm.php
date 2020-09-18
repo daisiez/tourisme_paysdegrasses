@@ -6,7 +6,6 @@ use Drupal\Core\Entity\BundleEntityFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Render\ElementInfoManagerInterface;
-use Drupal\Core\Serialization\Yaml;
 use Drupal\webform\Form\WebformDialogFormTrait;
 use Drupal\webform\Plugin\WebformElementManagerInterface;
 use Drupal\webform\Utility\WebformYaml;
@@ -20,21 +19,21 @@ class WebformEntityElementsForm extends BundleEntityFormBase {
   use WebformDialogFormTrait;
 
   /**
-   * Element info manager.
+   * The element info manager.
    *
    * @var \Drupal\Core\Render\ElementInfoManagerInterface
    */
   protected $elementInfo;
 
   /**
-   * Webform element manager.
+   * The webform element manager.
    *
    * @var \Drupal\webform\Plugin\WebformElementManagerInterface
    */
   protected $elementManager;
 
   /**
-   * Webform element validator.
+   * The webform element validator.
    *
    * @var \Drupal\webform\WebformEntityElementsValidatorInterface
    */
@@ -108,9 +107,10 @@ class WebformEntityElementsForm extends BundleEntityFormBase {
       '#default_value' => $this->getElementsWithoutWebformTypePrefix($webform->get('elements')),
       '#required' => TRUE,
       '#element_validate' => ['::validateElementsYaml'],
+      '#attributes' => ['style' => 'min-height: 300px'],
     ];
 
-    $form['token_tree_link'] = $this->tokenManager->buildTreeLink();
+    $form['token_tree_link'] = $this->tokenManager->buildTreeElement();
 
     $this->tokenManager->elementValidate($form);
 
@@ -159,7 +159,7 @@ class WebformEntityElementsForm extends BundleEntityFormBase {
     if ($messages = $this->elementsValidator->validate($webform)) {
       $form_state->setErrorByName('elements');
       foreach ($messages as $message) {
-        drupal_set_message($message, 'error');
+        $this->messenger()->addError($message);
       }
     }
   }
@@ -179,7 +179,7 @@ class WebformEntityElementsForm extends BundleEntityFormBase {
     ];
     $t_args = ['%label' => $webform->label()];
     $this->logger('webform')->notice('Webform @label elements saved.', $context);
-    drupal_set_message($this->t('Webform %label elements saved.', $t_args));
+    $this->messenger()->addStatus($this->t('Webform %label elements saved.', $t_args));
   }
 
   /****************************************************************************/
@@ -193,13 +193,13 @@ class WebformEntityElementsForm extends BundleEntityFormBase {
    *   Elements (YAML) without 'webform_' #type prefix.
    */
   protected function getElementsWithoutWebformTypePrefix($value) {
-    $elements = Yaml::decode($value);
+    $elements = WebformYaml::decode($value);
     if (!is_array($elements)) {
       return $value;
     }
 
     $this->removeWebformTypePrefixRecursive($elements);
-    return WebformYaml::tidy(Yaml::encode($elements));
+    return WebformYaml::encode($elements);
   }
 
   /**
@@ -230,13 +230,13 @@ class WebformEntityElementsForm extends BundleEntityFormBase {
    *   Elements (YAML) with 'webform_' #type prefix.
    */
   protected function getElementsWithWebformTypePrefix($value) {
-    $elements = Yaml::decode($value);
+    $elements = WebformYaml::decode($value);
     if (!is_array($elements)) {
       return $value;
     }
 
     $this->addWebformTypePrefixRecursive($elements);
-    return WebformYaml::tidy(Yaml::encode($elements));
+    return WebformYaml::encode($elements);
   }
 
   /**

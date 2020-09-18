@@ -4,7 +4,7 @@
   width: 16px;
   min-width: 16px;
   height: 11px;
-  
+  float: left;
   display: block;
   margin-right: 3px;
   display: inline-block;
@@ -32,7 +32,7 @@
   float:none;
 }
 
-.field__item {
+.field__flags__item {
     display: flex;
     flex-direction: row;
     align-items: baseline;

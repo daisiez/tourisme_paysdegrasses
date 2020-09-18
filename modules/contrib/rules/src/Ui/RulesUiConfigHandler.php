@@ -28,10 +28,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   component. For example, 'conditions' or 'foo.conditions'. Required if
  *   'config_parameter' is omitted.
  *
- * @see RulesUiDefinition::settings
+ * @see \Drupal\rules\Ui\RulesUiDefinition::settings()
  */
 class RulesUiConfigHandler extends PluginBase implements RulesUiHandlerInterface, ContainerFactoryPluginInterface {
-
   use TempStoreTrait;
 
   /**
@@ -138,7 +137,7 @@ class RulesUiConfigHandler extends PluginBase implements RulesUiHandlerInterface
    * {@inheritdoc}
    */
   public function getBaseRouteUrl(array $options = []) {
-    // See Url::fromRouteMatch()
+    // @see \Drupal\Core\Url::fromRouteMatch()
     return Url::fromRoute(
       $this->pluginDefinition->base_route,
       $this->currentRouteMatch->getRawParameters()->all(),
@@ -150,7 +149,7 @@ class RulesUiConfigHandler extends PluginBase implements RulesUiHandlerInterface
    * {@inheritdoc}
    */
   public function getUrlFromRoute($route_suffix, array $route_parameters, array $options = []) {
-    // See Url::fromRouteMatch()
+    // @see \Drupal\Core\Url::fromRouteMatch()
     return Url::fromRoute(
       $this->pluginDefinition->base_route . '.' . $route_suffix,
       $route_parameters + $this->currentRouteMatch->getRawParameters()->all(),

@@ -1,0 +1,11 @@
+dateDebut : {{ data.dateDebut }}<br />
+dateFin : {{ data.dateFin }}<br />
+horaireOuverture : {{ data.horaireOuverture }}<br />
+horaireFermeture : {{ data.horaireFermeture }}<br />
+complementHoraire : {{ data.complementHoraire }}<br />
+ouverturesJournalieres :
+<ul>
+  {% for day in data.ouverturesJournalieres %}
+    <li>{{ day }}</li>
+  {% endfor %}
+</ul>

@@ -6,6 +6,7 @@ use Drupal\Core\Cache\CacheableDependencyInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RedirectDestinationTrait;
+use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\Plugin\views\field\UncacheableFieldHandlerTrait;
@@ -17,7 +18,6 @@ use Drupal\views_bulk_operations\Service\ViewsbulkOperationsViewDataInterface;
 use Drupal\views_bulk_operations\Service\ViewsBulkOperationsActionManager;
 use Drupal\views_bulk_operations\Service\ViewsBulkOperationsActionProcessorInterface;
 use Drupal\views_bulk_operations\Form\ViewsBulkOperationsFormTrait;
-use Drupal\user\PrivateTempStoreFactory;
 use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Drupal\Core\Url;
@@ -59,7 +59,7 @@ class ViewsBulkOperationsBulkForm extends FieldPluginBase implements CacheableDe
   /**
    * User private temporary storage factory.
    *
-   * @var \Drupal\user\PrivateTempStoreFactory
+   * @var \Drupal\Core\TempStore\PrivateTempStoreFactory
    */
   protected $tempStoreFactory;
 
@@ -116,7 +116,7 @@ class ViewsBulkOperationsBulkForm extends FieldPluginBase implements CacheableDe
    *   Extended action manager object.
    * @param \Drupal\views_bulk_operations\Service\ViewsBulkOperationsActionProcessorInterface $actionProcessor
    *   Views Bulk Operations action processor.
-   * @param \Drupal\user\PrivateTempStoreFactory $tempStoreFactory
+   * @param \Drupal\Core\TempStore\PrivateTempStoreFactory $tempStoreFactory
    *   User private temporary storage factory.
    * @param \Drupal\Core\Session\AccountInterface $currentUser
    *   The current user object.
@@ -155,7 +155,7 @@ class ViewsBulkOperationsBulkForm extends FieldPluginBase implements CacheableDe
       $container->get('views_bulk_operations.data'),
       $container->get('plugin.manager.views_bulk_operations_action'),
       $container->get('views_bulk_operations.processor'),
-      $container->get('user.private_tempstore'),
+      $container->get('tempstore.private'),
       $container->get('current_user'),
       $container->get('request_stack')
     );
@@ -212,9 +212,15 @@ class ViewsBulkOperationsBulkForm extends FieldPluginBase implements CacheableDe
       'batch_size' => $this->options['batch'] ? $this->options['batch_size'] : 0,
       'total_results' => $this->viewData->getTotalResults(),
       'arguments' => $this->view->args,
-      'redirect_url' => Url::createFromRequest($this->requestStack->getCurrentRequest()),
+      'redirect_url' => Url::createFromRequest(clone $this->requestStack->getCurrentRequest()),
       'exposed_input' => $this->view->getExposedInput(),
     ];
+    $query = $variable['redirect_url']->getOption('query');
+    if (!$query) {
+      $query = [];
+    }
+    $query += $variable['exposed_input'];
+    $variable['redirect_url']->setOption('query', $query);
 
     // Create tempstore data object if it doesn't exist.
     if (!is_array($this->tempStoreData)) {
@@ -624,7 +630,7 @@ class ViewsBulkOperationsBulkForm extends FieldPluginBase implements CacheableDe
         $action_id = $form_state->getValue('action');
         if (!empty($action_id)) {
           $action = $this->actions[$action_id];
-          if ($this->isConfigurable($action)) {
+          if ($this->isActionConfigurable($action)) {
             $actionObject = $this->actionManager->createInstance($action_id);
             $form['header'][$this->options['id']]['configuration'] += $actionObject->buildConfigurationForm($form['header'][$this->options['id']]['configuration'], $form_state);
             $form['header'][$this->options['id']]['configuration']['#config_included'] = TRUE;
@@ -778,7 +784,7 @@ class ViewsBulkOperationsBulkForm extends FieldPluginBase implements CacheableDe
         $this->tempStoreData['list'] = [];
       }
 
-      $configurable = $this->isConfigurable($action);
+      $configurable = $this->isActionConfigurable($action);
 
       // Get configuration if using AJAX.
       if ($configurable && empty($this->options['form_step'])) {
@@ -794,6 +800,11 @@ class ViewsBulkOperationsBulkForm extends FieldPluginBase implements CacheableDe
       }
 
       // Routing - determine redirect route.
+
+      // Set default redirection due to issue #2952498.
+      // TODO: remove the next line when core cause is eliminated.
+      $redirect_route = 'views_bulk_operations.execute_batch';
+
       if ($this->options['form_step'] && $configurable) {
         $redirect_route = 'views_bulk_operations.execute_configurable';
       }
@@ -887,7 +898,7 @@ class ViewsBulkOperationsBulkForm extends FieldPluginBase implements CacheableDe
   /**
    * Check if an action is configurable.
    */
-  protected function isConfigurable($action) {
+  protected function isActionConfigurable($action) {
     return (in_array('Drupal\Core\Plugin\PluginFormInterface', class_implements($action['class']), TRUE) || method_exists($action['class'], 'buildConfigurationForm'));
   }
 

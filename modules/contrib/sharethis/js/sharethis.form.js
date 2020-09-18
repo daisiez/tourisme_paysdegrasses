@@ -157,7 +157,7 @@
 
   Drupal.behaviors.shareThisForm = {
     attach: function (context) {
-      stlib_picker.setupPicker(jQuery('#myPicker'), drupalSettings.sharethis.service_string_markup, drupal_st.serviceCallback);
+      stlib_picker.setupPicker(jQuery('#myPicker', context), drupalSettings.sharethis.service_string_markup, drupal_st.serviceCallback);
       drupal_st.addEvents();
       drupal_st.setupServiceText();
     }

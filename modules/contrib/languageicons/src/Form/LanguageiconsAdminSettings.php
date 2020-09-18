@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\languageicons\Form\LanguageiconsAdminSettings.
- */
-
 namespace Drupal\languageicons\Form;
 
 use Drupal\Core\Form\ConfigFormBase;

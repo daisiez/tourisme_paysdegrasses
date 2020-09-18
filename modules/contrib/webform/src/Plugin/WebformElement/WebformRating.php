@@ -22,7 +22,7 @@ class WebformRating extends Range {
   /**
    * {@inheritdoc}
    */
-  public function getDefaultProperties() {
+  protected function defineDefaultProperties() {
     $properties = [
       // Number settings.
       'max' => 5,
@@ -31,7 +31,7 @@ class WebformRating extends Range {
       // Rating settings.
       'star_size' => 'medium',
       'reset' => FALSE,
-    ] + parent::getDefaultProperties();
+    ] + parent::defineDefaultProperties();
     unset(
       $properties['output'],
       $properties['output__field_prefix'],
@@ -40,6 +40,8 @@ class WebformRating extends Range {
     );
     return $properties;
   }
+
+  /****************************************************************************/
 
   /**
    * {@inheritdoc}
@@ -60,8 +62,8 @@ class WebformRating extends Range {
     switch ($format) {
       case 'star':
         // Always return the raw value when the rating widget is included in an
-        // email.
-        if (!empty($options['email'])) {
+        // email or PDF.
+        if (!empty($options['email']) || !empty($options['pdf'])) {
           return parent::formatTextItem($element, $webform_submission, $options);
         }
 
@@ -124,6 +126,15 @@ class WebformRating extends Range {
       '#description' => $this->t('If checked, a reset button will be placed before the rating element.'),
       '#return_value' => TRUE,
     ];
+
+    // Only allow a rating element to be required if the min value can be
+    // set to 0.
+    $form['validation']['required_container']['#states'] = [
+      'visible' => [
+        ':input[name="properties[min]"]' => ['value' => '0'],
+      ],
+    ];
+
     return $form;
   }
 

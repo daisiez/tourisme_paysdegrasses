@@ -8,10 +8,14 @@ use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
 use Drupal\Core\Template\Attribute;
+use Drupal\Core\Render\Markup;
 
 /**
+ * Class IframeDefaultFormatter.
+ *
  * @FieldFormatter(
  *  id = "iframe_default",
+ *  module = "iframe",
  *  label = @Translation("Title, over iframe (default)"),
  *  field_types = {"iframe"}
  * )
@@ -22,7 +26,7 @@ class IframeDefaultFormatter extends FormatterBase {
    * {@inheritdoc}
    */
   public static function defaultSettings() {
-    return array(
+    return [
       'url' => '',
       'title' => '',
       'width' => '',
@@ -30,76 +34,25 @@ class IframeDefaultFormatter extends FormatterBase {
       'class' => '',
       'expose_class' => '',
       'frameborder' => '0',
-      'scrolling' => 'auto',
+      'scrolling' => '',
       'transparency' => '0',
       'tokensupport' => '0',
-    ) + parent::defaultSettings();
+      'allowfullscreen' => '0',
+    ] + parent::defaultSettings();
   }
-
-  /**
-   * {@inheritdoc}
-   */
-  /* Settings form after "manage form display" page, valid for one field of content type */
-  /* USE only if any further specific-Formatter-fields needed */
-  /*
-  public function settingsForm(array $form, FormStateInterface $form_state) {
-    $sizedescription = t('iframes need fix width and height, only numbers are allowed.');
-    $element['width'] = array(
-      '#type' => 'textfield',
-      '#title' => t('width of an iframe'),
-      '#default_value' => $this->getSetting('width'), # ''
-      '#description' => $sizedescription,
-      '#maxlength' => 4,
-      '#size' => 4,
-    );
-    $element['height'] = array(
-      '#type' => 'textfield',
-      '#title' => t('height of an iframe'),
-      '#default_value' => $this->getSetting('height'), # ''
-      '#description' => $sizedescription,
-      '#maxlength' => 4,
-      '#size' => 4,
-    );
-    $element['class'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Additional CSS Class'),
-      '#default_value' => $this->getSetting('class'), # ''
-      '#description' => t('When output, this iframe will have this class attribute. Multiple classes should be separated by spaces.'),
-    );
-    return $element;
-  }
-  */
-
-  /**
-   * {@inheritdoc}
-   */
-  /* summary on the "manage display" page, valid for one content type */
-  /*
-  public function settingsSummary() {
-    $summary = array();
-
-    $summary[] = t('Iframe default width: @width', array('@width' => $this->getSetting('width')));
-    $summary[] = t('Iframe default height: @height', array('@height' => $this->getSetting('height')));
-
-    return $summary;
-  }
-  */
-
 
   /**
    * {@inheritdoc}
    */
   public function viewElements(FieldItemListInterface $items, $langcode) {
-    $elements = array();
-    $settings = $this->getSettings();
+    $elements = [];
     $field_settings = $this->getFieldSettings();
+    $settings = $this->getSettings();
     $entity = $items->getEntity();
-    #\iframe_debug(3, __METHOD__, $entity);
-    #\iframe_debug(3, __METHOD__, $settings);
-    #\iframe_debug(3, __METHOD__, $field_settings);
-    #\iframe_debug(3, __METHOD__, $items->getValue());
-
-
+    \iframe_debug(3, __METHOD__, $field_settings);
+    \iframe_debug(3, __METHOD__, $settings);
+    \iframe_debug(3, __METHOD__, $entity);
+    // \iframe_debug(3, __METHOD__, $items->getValue());
     foreach ($items as $delta => $item) {
       if (empty($item->url)) {
         continue;
@@ -107,68 +60,91 @@ class IframeDefaultFormatter extends FormatterBase {
       if (!isset($item->title)) {
         $item->title = '';
       }
-      $elements[$delta] = array(
-        '#markup' => self::iframe_iframe($item->title, $item->url, $item),
-        '#allowed_tags' => array('iframe', 'a', 'h3'),
-      );
-      # tokens can be dynamic, so its not cacheable
+      $elements[$delta] = [
+        '#markup' => Markup::create(self::iframeIframe($item->title, $item->url, $item)),
+        '#allowed_tags' => ['iframe', 'a', 'h3', 'style'],
+      ];
+      // Tokens can be dynamic, so its not cacheable.
       if (isset($settings['tokensupport']) && $settings['tokensupport']) {
-        $elements[$delta]['cache'] = array('max-age' => 0);
+        $elements[$delta]['cache'] = ['max-age' => 0];
       }
     }
     return $elements;
   }
 
-  /*
-   * like central function
-   * form the iframe code
+  /**
+   * Like central function form the iframe code.
    */
-  static public function iframe_iframe($text, $path, $item) {
-    $options = array();
-    $options['width'] = !empty($item->width)? $item->width : '100%';
-    $options['height'] = !empty($item->height)? $item->height : '701';
+  public static function iframeIframe($text, $path, $item) {
+    // \iframe_debug(0, __METHOD__, $item->toArray());
+    $options = [];
+    $options['width'] = !empty($item->width) ? $item->width : '100%';
+    $options['height'] = !empty($item->height) ? $item->height : '701';
+    // Collect all allow policies.
+    $allow = [];
+    // Collect styles, but leave it overwritable.
+    $style = '';
+    $itemName = $item->getFieldDefinition()->getName();
 
     if (!empty($item->frameborder) && $item->frameborder > 0) {
-        $options['frameborder'] = (int)$item->frameborder;
+      $style .= '/*frameborder*/ border-width:2px;';
     }
-    $options['scrolling'] = !empty($item->scrolling) ? $item->scrolling : 'auto';
+    else {
+      $style .= '/*frameborder*/ border-width:0;';
+    }
+    if (!empty($item->scrolling)) {
+      if ($item->scrolling == 'yes') {
+        $style .= '/*scrolling*/ overflow:scroll;';
+      }
+      elseif ($item->scrolling == 'no') {
+        $style .= '/*scrolling*/ overflow:hidden;';
+      }
+      else {
+        // Default: auto.
+        $style .= '/*scrolling*/ overflow:auto;';
+      }
+    }
     if (!empty($item->transparency) && $item->transparency > 0) {
-        $options['transparency'] = (int)$item->transparency;
+      $style .= '/*transparency*/ background-color:transparent;';
     }
 
-    $htmlid = '';
+    $htmlid = 'iframe-' . $itemName;
     if (isset($item->htmlid) && !empty($item->htmlid)) {
-      $htmlid = ' id="' . htmlspecialchars($item->htmlid) . '" name="' . htmlspecialchars($item->htmlid) . '"';
+      $htmlid = $item->htmlid;
     }
+    $htmlid = preg_replace('#[^A-Za-z0-9\-\_]+#', '-', $htmlid);
+    $options['id'] = $options['name'] = $htmlid;
 
     // Append active class.
     $options['class'] = !empty($item->class) ? $item->class : '';
-    /*
-    if ($path == $_GET['q'] || ($path == '<front>' && drupal_is_front_page())) {
-      if (!empty($options['class'])) {
-        $options['class'] .= ' active';
-      }
-      else {
-        $options['class'] = 'active';
-      }
-    }
-    */
 
-    // Remove all HTML and PHP tags from a tooltip. For best performance, we act only
-    // if a quick strpos() pre-check gave a suspicion (because strip_tags() is expensive).
+    // Remove all HTML and PHP tags from a tooltip.
+    // For best performance, we act only
+    // if a quick strpos() pre-check gave a suspicion
+    // (because strip_tags() is expensive).
     $options['title'] = !empty($item->title) ? $item->title : '';
     if (!empty($options['title']) && strpos($options['title'], '<') !== FALSE) {
       $options['title'] = strip_tags($options['title']);
     }
-    $options_link = array(); $options_link['attributes'] = array();
-    $options_link['attributes']['title'] = $options['title'];
 
-    $drupal_attributes = new Attribute($options);
+    // Policy attribute.
+    if (!empty($item->allowfullscreen) && $item->allowfullscreen) {
+      $allow[] = 'fullscreen';
+    }
+    $allow[] = 'autoplay';
+    $allow[] = 'camera';
+    $allow[] = 'microphone';
+    $allow[] = 'payment';
+    $allow[] = 'accelerometer';
+    $allow[] = 'geolocation';
+    $allow[] = 'encrypted-media';
+    $allow[] = 'gyroscope';
+    $options['allow'] = implode(',', $allow);
 
     if (\Drupal::moduleHandler()->moduleExists('token')) {
-      // Token Support for field "url" and "title"
+      // Token Support for field "url" and "title".
       $tokensupport = $item->getTokenSupport();
-      $tokencontext = array('user' => \Drupal::currentUser());
+      $tokencontext = ['user' => \Drupal::currentUser()];
       if (isset($GLOBALS['node'])) {
         $tokencontext['node'] = $GLOBALS['node'];
       }
@@ -180,19 +156,23 @@ class IframeDefaultFormatter extends FormatterBase {
       }
     }
 
+    $options_link = []; $options_link['attributes'] = [];
+    $options_link['attributes']['title'] = $options['title'];
+    $srcuri = Url::fromUri($path, $options_link);
+    $src = $srcuri->toString();
+    $options['src'] = $src;
+    $drupal_attributes = new Attribute($options);
+
+    // Style attribute is filtered while rendering => use style block.
     $output =
-      '<div class="' . (!empty($options['class'])? new HtmlEscapedText($options['class']) : '') . '">'
-        . (empty($text)? '' : '<h3 class="iframe_title">' . (isset($options['html']) && $options['html'] ? $text : new HtmlEscapedText($text)) . '</h3>')
-        . '<iframe src="' . htmlspecialchars(Url::fromUri($path, $options)->toString()) . '"'
-          . $drupal_attributes->__toString()
-          . $htmlid
-        . '>'
-        . t('Your browser does not support iframes. But You can use the following link.') . ' ' . Link::fromTextAndUrl('Link', Url::fromUri($path, $options_link))->toString()
+      '<div class="' . (!empty($options['class']) ? new HtmlEscapedText($options['class']) : '') . '">'
+        . (empty($text) ? '' : '<h3 class="iframe_title">' . (isset($options['html']) && $options['html'] ? $text : new HtmlEscapedText($text)) . '</h3>')
+        . '<style type="text/css">iframe#' . $htmlid . ' {' . $style . '}</style>' . "\n"
+        . '  <iframe ' . $drupal_attributes->__toString() . '>'
+        . t('Your browser does not support iframes, but you can use the following link:') . ' ' . Link::fromTextAndUrl('Link', $srcuri)->toString()
         . '</iframe>'
-      . '</div>'
-    ;
+      . '</div>';
     return $output;
   }
-
 
 }

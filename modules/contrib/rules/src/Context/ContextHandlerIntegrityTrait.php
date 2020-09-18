@@ -5,12 +5,11 @@ namespace Drupal\rules\Context;
 use Drupal\Core\Plugin\Context\ContextDefinitionInterface as CoreContextDefinitionInterface;
 use Drupal\Core\Plugin\ContextAwarePluginInterface as CoreContextAwarePluginInterface;
 use Drupal\Core\TypedData\DataDefinitionInterface;
-//@codingStandardsIgnoreStart
 use Drupal\rules\Context\ContextDefinitionInterface as RulesContextDefinitionInterface;
+//@codingStandardsIgnoreStart
 use Drupal\rules\Context\ContextProviderInterface;
-use Drupal\rules\Exception\IntegrityException;
 //@codingStandardsIgnoreEnd
-use Drupal\rules\Engine\ExecutionMetadataStateInterface;
+use Drupal\rules\Exception\IntegrityException;
 use Drupal\rules\Engine\IntegrityViolation;
 use Drupal\rules\Engine\IntegrityViolationList;
 
@@ -26,7 +25,7 @@ trait ContextHandlerIntegrityTrait {
    *
    * @param \Drupal\Core\Plugin\ContextAwarePluginInterface $plugin
    *   The plugin with its defined context.
-   * @param \Drupal\rules\Engine\ExecutionMetadataStateInterface $metadata_state
+   * @param \Drupal\rules\Context\ExecutionMetadataStateInterface $metadata_state
    *   The current configuration state with all defined variables that are
    *   available.
    *
@@ -131,7 +130,7 @@ trait ContextHandlerIntegrityTrait {
    */
   protected function checkDataTypeCompatible(CoreContextDefinitionInterface $context_definition, DataDefinitionInterface $provided, $context_name, IntegrityViolationList $violation_list) {
     // Compare data types. For now, fail if they are not equal.
-    // @todo: Add support for matching based upon type-inheritance.
+    // @todo Add support for matching based upon type-inheritance.
     $target_type = $context_definition->getDataDefinition()->getDataType();
 
     // Special case any and entity target types for now.

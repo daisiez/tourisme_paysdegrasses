@@ -101,6 +101,9 @@ class LanguageFlagFormatter extends BaseFormatter {
       '#source' => 'language',
     );
 
+    $view['#prefix'] = '<div class="field__flags__item">';
+    $view['#suffix'] = '</div>';
+
     return $view;
   }
 }

@@ -36,7 +36,7 @@ class ModalListBuilder extends EntityListBuilder {
     return new static(
       $container->get('language_manager'),
       $entity_type,
-      $container->get('entity.manager')->getStorage($entity_type->id()),
+      $container->get('entity_type.manager')->getStorage($entity_type->id()),
       $container->get('url_generator')
     );
   }
@@ -57,6 +57,20 @@ class ModalListBuilder extends EntityListBuilder {
     $this->languageManager = $language_manager;
     parent::__construct($entity_type, $storage);
     $this->urlGenerator = $url_generator;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getDefaultOperations(EntityInterface $modal_page) {
+    $operations = parent::getDefaultOperations($modal_page);
+    $operations['published'] = [
+      'title' => $this->t('Toggle Published'),
+      'weight' => 15,
+      'url' => $this->ensureDestination($modal_page->toUrl('published-form')),
+    ];
+
+    return $operations;
   }
 
   /**

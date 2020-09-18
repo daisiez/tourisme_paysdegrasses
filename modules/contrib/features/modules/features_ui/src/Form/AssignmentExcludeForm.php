@@ -2,7 +2,12 @@
 
 namespace Drupal\features_ui\Form;
 
+use Drupal\features\FeaturesManagerInterface;
+use Drupal\features\FeaturesAssignerInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Extension\ExtensionList;
 use Drupal\Core\Form\FormStateInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Configures the selected configuration assignment method for this site.
@@ -10,6 +15,55 @@ use Drupal\Core\Form\FormStateInterface;
 class AssignmentExcludeForm extends AssignmentFormBase {
 
   const METHOD_ID = 'exclude';
+
+  /**
+   * The install profile extension list.
+   *
+   * @var \Drupal\Core\Extension\ExtensionList
+   */
+  protected $profileList;
+
+  /**
+   * The install profile.
+   *
+   * @var string
+   */
+  protected $installProfile;
+
+  /**
+   * Constructs a AssignmentExcludeForm object.
+   *
+   * @param \Drupal\Core\Extension\ExtensionList $extension_list
+   *   The install profile extension list.
+   * @param string $install_profile
+   *   The install profile.
+   * @param \Drupal\features\FeaturesManagerInterface $features_manager
+   *   The features manager.
+   * @param \Drupal\features\FeaturesAssignerInterface $assigner
+   *   The assigner.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager.
+
+   */
+  public function __construct(FeaturesManagerInterface $features_manager, FeaturesAssignerInterface $assigner, EntityTypeManagerInterface $entity_type_manager, ExtensionList $profile_list, $install_profile) {
+    parent::__construct($features_manager, $assigner, $entity_type_manager);
+
+    $this->profileList = $profile_list;
+    $this->installProfile = $install_profile;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('features.manager'),
+      $container->get('features_assigner'),
+      $container->get('entity_type.manager'),
+      $container->get('extension.list.profile'),
+      $container->getParameter('install_profile')
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -31,79 +85,79 @@ class AssignmentExcludeForm extends AssignmentFormBase {
     $this->setConfigTypeSelect($form, $settings['types']['config'], $this->t('exclude'), FALSE,
       $this->t("Select types of configuration that should be excluded from packaging."));
 
-    $form['curated'] = array(
+    $form['curated'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Exclude designated site-specific configuration'),
       '#default_value' => $curated_settings,
       '#description' => $this->t('Select this option to exclude a curated list of site-specific configuration from packaging.'),
-    );
+    ];
 
-    $form['module'] = array(
+    $form['module'] = [
       '#type' => 'fieldset',
       '#tree' => TRUE,
       '#title' => $this->t('Exclude configuration provided by modules'),
-    );
+    ];
 
-    $form['module']['installed'] = array(
+    $form['module']['installed'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Exclude installed module-provided entity configuration'),
       '#default_value' => $module_settings['installed'],
       '#description' => $this->t('Select this option to exclude configuration provided by INSTALLED modules from reassignment.'),
-      '#attributes' => array(
+      '#attributes' => [
         'data-module-installed' => 'status',
-      ),
-    );
+      ],
+    ];
 
-    $show_if_module_installed_checked = array(
-      'visible' => array(
-        ':input[data-module-installed="status"]' => array('checked' => TRUE),
-      ),
-    );
+    $show_if_module_installed_checked = [
+      'visible' => [
+        ':input[data-module-installed="status"]' => ['checked' => TRUE],
+      ],
+    ];
 
-    $info = system_get_info('module', drupal_get_profile());
-    $form['module']['profile'] = array(
+    $info = $this->profileList->getExtensionInfo($this->installProfile);
+    $form['module']['profile'] = [
       '#type' => 'checkbox',
       '#title' => $this->t("Don't exclude install profile's configuration"),
       '#default_value' => $module_settings['profile'],
-      '#description' => $this->t("Select this option to allow configuration provided by the site's install profile (%profile) to be reassigned.", array('%profile' => $info['name'])),
+      '#description' => $this->t("Select this option to allow configuration provided by the site's install profile (%profile) to be reassigned.", ['%profile' => $info['name']]),
       '#states' => $show_if_module_installed_checked,
-    );
+    ];
 
     $bundle_name = $this->currentBundle->getMachineName();
     $bundle_name = !empty($bundle_name) ? $bundle_name : $this->t('none');
-    $form['module']['namespace'] = array(
+    $form['module']['namespace'] = [
       '#type' => 'checkbox',
       '#title' => $this->t("Don't exclude non-installed configuration by namespace"),
       '#default_value' => $module_settings['namespace'],
-      '#description' => $this->t("Select this option to allow configuration provided by uninstalled modules with the bundle namespace (%namespace_*) to be reassigned.", array('%namespace' => $bundle_name)),
+      '#description' => $this->t("Select this option to allow configuration provided by uninstalled modules with the bundle namespace (%namespace_*) to be reassigned.", ['%namespace' => $bundle_name]),
       '#states' => $show_if_module_installed_checked,
-      '#attributes' => array(
+      '#attributes' => [
         'data-namespace' => 'status',
-      ),
-    );
+      ],
+    ];
 
-    $show_if_namespace_checked = array(
-      'visible' => array(
-        ':input[data-namespace="status"]' => array('checked' => TRUE),
-        ':input[data-module-installed="status"]' => array('checked' => TRUE),
-      ),
-    );
+    $show_if_namespace_checked = [
+      'visible' => [
+        ':input[data-namespace="status"]' => ['checked' => TRUE],
+        ':input[data-module-installed="status"]' => ['checked' => TRUE],
+      ],
+    ];
 
-    $form['module']['namespace_any'] = array(
+    $form['module']['namespace_any'] = [
       '#type' => 'checkbox',
       '#title' => $this->t("Don't exclude ANY configuration by namespace"),
       '#default_value' => $module_settings['namespace_any'],
       '#description' => $this->t("Select this option to allow configuration provided by ANY modules with the bundle namespace (%namespace_*) to be reassigned.
-        Warning: Can cause installed configuration to be reassigned to different packages.", array('%namespace' => $bundle_name)),
+        Warning: Can cause installed configuration to be reassigned to different packages.", ['%namespace' => $bundle_name]),
       '#states' => $show_if_namespace_checked,
-    );
+    ];
 
     $this->setActions($form, self::METHOD_ID);
 
     return $form;
   }
 
- /**
+  /**
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
@@ -125,7 +179,7 @@ class AssignmentExcludeForm extends AssignmentFormBase {
     $this->currentBundle->setAssignmentSettings(self::METHOD_ID, $settings)->save();
 
     $this->setRedirect($form_state);
-    drupal_set_message($this->t('Package assignment configuration saved.'));
+    $this->messenger()->addStatus($this->t('Package assignment configuration saved.'));
   }
 
 }

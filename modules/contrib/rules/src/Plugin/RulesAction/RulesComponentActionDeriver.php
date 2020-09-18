@@ -12,7 +12,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Derives Rules component action plugin definitions from config entities.
  *
- * @see RulesComponentAction
+ * @see \Drupal\rules\Plugin\RulesAction\RulesComponentAction
  */
 class RulesComponentActionDeriver extends DeriverBase implements ContainerDeriverInterface {
   use StringTranslationTrait;
@@ -32,7 +32,12 @@ class RulesComponentActionDeriver extends DeriverBase implements ContainerDerive
   protected $expressionManager;
 
   /**
-   * Contructor.
+   * Creates a new RulesComponentActionDeriver object.
+   *
+   * @param \Drupal\Core\Entity\EntityStorageInterface $storage
+   *   The entity storage.
+   * @param \Drupal\rules\Engine\ExpressionManagerInterface $expression_manager
+   *   The Rules expression manager.
    */
   public function __construct(EntityStorageInterface $storage, ExpressionManagerInterface $expression_manager) {
     $this->storage = $storage;
@@ -66,7 +71,7 @@ class RulesComponentActionDeriver extends DeriverBase implements ContainerDerive
         ]),
         'category' => $this->t('Components'),
         'component_id' => $rules_component->id(),
-        'context' => $rules_component->getContextDefinitions(),
+        'context_definitions' => $rules_component->getContextDefinitions(),
         'provides' => $rules_component->getProvidedContextDefinitions(),
       ] + $base_plugin_definition;
     }

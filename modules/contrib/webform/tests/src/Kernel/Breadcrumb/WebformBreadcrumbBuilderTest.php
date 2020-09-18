@@ -28,7 +28,14 @@ class WebformBreadcrumbBuilderTest extends UnitTestCase {
   protected $moduleHandler;
 
   /**
-   * The Webform request handler.
+   * The config factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactory
+   */
+  protected $configFactory;
+
+  /**
+   * The webform request handler.
    *
    * @var \Drupal\webform\WebformRequestInterface
    */
@@ -42,7 +49,7 @@ class WebformBreadcrumbBuilderTest extends UnitTestCase {
   protected $translationManager;
 
   /**
-   * The Webform breadcrumb builder.
+   * The webform breadcrumb builder.
    *
    * @var \Drupal\webform\Breadcrumb\WebformBreadcrumbBuilder
    */
@@ -106,13 +113,16 @@ class WebformBreadcrumbBuilderTest extends UnitTestCase {
     $this->setUpMockEntities();
 
     // Make some test doubles.
-    $this->moduleHandler = $this->getMock('Drupal\Core\Extension\ModuleHandlerInterface');
-    $this->requestHandler = $this->getMock('Drupal\webform\WebformRequestInterface');
-    $this->translationManager = $this->getMock('Drupal\Core\StringTranslation\TranslationInterface');
+    $this->moduleHandler = $this->createMock('Drupal\Core\Extension\ModuleHandlerInterface');
+    $this->configFactory = $this->getConfigFactoryStub([
+      'webform.settings' => ['ui' => ['toolbar_item' => FALSE]],
+    ]);
+    $this->requestHandler = $this->createMock('Drupal\webform\WebformRequestInterface');
+    $this->translationManager = $this->createMock('Drupal\Core\StringTranslation\TranslationInterface');
 
     // Make an object to test.
     $this->breadcrumbBuilder = $this->getMockBuilder('Drupal\webform\Breadcrumb\WebformBreadcrumbBuilder')
-      ->setConstructorArgs([$this->moduleHandler, $this->requestHandler, $this->translationManager])
+      ->setConstructorArgs([$this->moduleHandler, $this->requestHandler, $this->translationManager, $this->configFactory])
       ->setMethods(NULL)
       ->getMock();
 
@@ -144,25 +154,6 @@ class WebformBreadcrumbBuilderTest extends UnitTestCase {
   /****************************************************************************/
   // Below test is passing locally but failing on Drupal.org.
   /****************************************************************************/
-
-  /**
-   * Tests WebformBreadcrumbBuilder::__construct().
-   *
-   * @covers ::__construct
-   */
-  /*
-  public function testConstructor() {
-    // Reflect upon our properties, except for config which is a special case.
-    $property_names = [
-      'moduleHandler' => $this->moduleHandler,
-      'requestHandler' => $this->requestHandler,
-      'stringTranslation' => $this->translationManager,
-    ];
-    foreach ($property_names as $property_name => $property_value) {
-      $this->assertAttributeEquals($property_value, $property_name, $this->breadcrumbBuilder);
-    }
-  }
-  */
 
   /**
    * Tests WebformBreadcrumbBuilder::applies().
@@ -197,13 +188,13 @@ class WebformBreadcrumbBuilderTest extends UnitTestCase {
       [FALSE, 'entity.webform'],
       [TRUE, 'entity.webform.handler.'],
       [TRUE, 'entity.webform_ui.element'],
-      [TRUE, 'webform.user.submissions'],
-      [TRUE, 'webform.user.submissions'],
+      [TRUE, 'entity.webform.user.submissions'],
       // Source entity.
       [TRUE, 'entity.{source_entity}.webform'],
       [TRUE, 'entity.{source_entity}.webform_submission'],
       [TRUE, 'entity.node.webform'],
       [TRUE, 'entity.node.webform_submission'],
+      [TRUE, 'entity.node.webform.user.submissions'],
       // Submissions.
       [FALSE, 'entity.webform.user.submission'],
       [TRUE, 'entity.webform.user.submission', [['webform_submission', $this->webformSubmissionAccess]]],
@@ -232,7 +223,7 @@ class WebformBreadcrumbBuilderTest extends UnitTestCase {
   public function testType($expected, $route_name = NULL, array $parameter_map = []) {
     $route_match = $this->getMockRouteMatch($route_name, $parameter_map);
     $this->breadcrumbBuilder->applies($route_match);
-    $this->assertAttributeEquals($expected, 'type', $this->breadcrumbBuilder);
+    $this->assertEquals($expected, $this->breadcrumbBuilder->getType());
   }
 
   /**
@@ -255,7 +246,7 @@ class WebformBreadcrumbBuilderTest extends UnitTestCase {
       // Handler.
       ['webform_handler', 'entity.webform.handler.'],
       // User submissions.
-      ['webform_user_submissions', 'webform.user.submissions'],
+      ['webform_user_submissions', 'entity.webform.user.submissions'],
       ['webform_source_entity', 'entity.{source_entity}.webform.user.submissions'],
       ['webform_source_entity', 'entity.node.webform.user.submissions'],
       // User submission.
@@ -335,7 +326,7 @@ class WebformBreadcrumbBuilderTest extends UnitTestCase {
     $webform_submission_access->expects($this->any())
       ->method('access')
       ->will($this->returnCallback(function ($operation) {
-        return ($operation == 'view_own');
+        return ($operation === 'view_own');
       }));
     $route_match = $this->getMockRouteMatch('entity.node.webform_submission.canonical', [
       ['webform_submission', $webform_submission_access],
@@ -426,14 +417,25 @@ class WebformBreadcrumbBuilderTest extends UnitTestCase {
    * Test build user submissions breadcrumbs.
    */
   public function testBuildUserSubmissions() {
+    // Check without view own access.
     $route_match = $this->getMockRouteMatch('entity.webform.user.submission', [
       ['webform_submission', $this->webformSubmission],
+    ]);
+    $links = [
+      Link::createFromRoute($this->webform->label(), 'entity.webform.canonical', ['webform' => $this->webform->id()]),
+    ];
+    $this->assertLinks($route_match, $links);
+
+    // Check with view own access.
+    $route_match = $this->getMockRouteMatch('entity.webform.user.submission', [
+      ['webform_submission', $this->webformSubmissionAccess],
     ]);
     $links = [
       Link::createFromRoute($this->webform->label(), 'entity.webform.canonical', ['webform' => $this->webform->id()]),
       Link::createFromRoute('Submissions', 'entity.webform.user.submissions', ['webform' => $this->webform->id()]),
     ];
     $this->assertLinks($route_match, $links);
+
   }
 
   /**
@@ -492,7 +494,7 @@ class WebformBreadcrumbBuilderTest extends UnitTestCase {
    *   A mocked route match.
    */
   protected function getMockRouteMatch($route_name = NULL, array $parameter_map = []) {
-    $route_match = $this->getMock('Drupal\Core\Routing\RouteMatchInterface');
+    $route_match = $this->createMock('Drupal\Core\Routing\RouteMatchInterface');
     $route_match->expects($this->any())
       ->method('getRouteName')
       ->will($this->returnValue($route_name));

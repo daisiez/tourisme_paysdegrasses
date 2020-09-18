@@ -1,0 +1,13 @@
+name: 'Apidae Tourisme Examples'
+type: module
+description: 'Samples snippet for Apidae customisations'
+core: 8.x
+package: 'Web services'
+core_version_requirement: ^8 || ^9
+dependencies:
+  - apidae_tourisme
+
+# Information added by Drupal.org packaging script on 2020-06-23
+version: '2.0.1'
+project: 'apidae_tourisme'
+datestamp: 1592915858

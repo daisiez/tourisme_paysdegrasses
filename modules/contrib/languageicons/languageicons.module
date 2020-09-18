@@ -104,7 +104,7 @@ function template_preprocess_languageicons_link_content(&$variables) {
   if ($path = \Drupal::config('languageicons.settings')->get('path')) {
     $variables['icon'] = [
       '#theme' => 'image',
-      '#uri' => str_replace('*', $language->id(), \Drupal\Component\Utility\Html::escape($path)),
+      '#uri' => str_replace('*', $language->getId(), \Drupal\Component\Utility\Html::escape($path)),
       '#alt' => $title,
       '#title' => $title,
       '#width' => $width,

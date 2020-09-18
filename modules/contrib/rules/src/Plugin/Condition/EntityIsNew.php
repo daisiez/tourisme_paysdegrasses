@@ -12,15 +12,16 @@ use Drupal\rules\Core\RulesConditionBase;
  *   id = "rules_entity_is_new",
  *   label = @Translation("Entity is new"),
  *   category = @Translation("Entity"),
- *   context = {
+ *   context_definitions = {
  *     "entity" = @ContextDefinition("entity",
  *       label = @Translation("Entity"),
- *       description = @Translation("Specifies the entity for which to evaluate the condition.")
- *     )
+ *       description = @Translation("Specifies the entity for which to evaluate the condition."),
+ *       assignment_restriction = "selector"
+ *     ),
  *   }
  * )
  *
- * @todo: Add access callback information from Drupal 7?
+ * @todo Add access callback information from Drupal 7?
  */
 class EntityIsNew extends RulesConditionBase {
 

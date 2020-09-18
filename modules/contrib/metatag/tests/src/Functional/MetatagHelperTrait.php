@@ -91,7 +91,7 @@ trait MetatagHelperTrait {
    *   be automatically generated. If the 'name' item is not present the 'vid'
    *   will be used.
    *
-   * @return Drupal\taxonomy\Entity\Vocabulary
+   * @return \Drupal\taxonomy\Entity\Vocabulary
    *   A fully formatted vocabulary object.
    */
   private function createVocabulary(array $values = []) {
@@ -115,7 +115,7 @@ trait MetatagHelperTrait {
       $this->assertSame($status, SAVED_NEW, (new FormattableMarkup('Created vocabulary %type.', ['%type' => $vocab->id()]))->__toString());
     }
     else {
-      $this->assertEqual($status, SAVED_NEW, (new FormattableMarkup('Created vocabulary %type.', ['%type' => $vocab->id()]))->__toString());
+      self::assertEquals($status, SAVED_NEW, (new FormattableMarkup('Created vocabulary %type.', ['%type' => $vocab->id()]))->__toString());
     }
 
     return $vocab;
@@ -148,7 +148,7 @@ trait MetatagHelperTrait {
       $this->assertSame($status, SAVED_NEW, (new FormattableMarkup('Created term %name.', ['%name' => $term->label()]))->__toString());
     }
     else {
-      $this->assertEqual($status, SAVED_NEW, (new FormattableMarkup('Created term %name.', ['%name' => $term->label()]))->__toString());
+      self::assertEquals($status, SAVED_NEW, (new FormattableMarkup('Created term %name.', ['%name' => $term->label()]))->__toString());
     }
 
     return $term;

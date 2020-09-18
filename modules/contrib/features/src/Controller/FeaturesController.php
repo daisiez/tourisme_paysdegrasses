@@ -33,7 +33,7 @@ class FeaturesController implements ContainerInjectionInterface {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      new FileDownloadController(),
+      FileDownloadController::create($container),
       $container->get('csrf_token')
     );
   }
@@ -69,7 +69,7 @@ class FeaturesController implements ContainerInjectionInterface {
         throw new AccessDeniedHttpException();
       }
 
-      $request = new Request(array('file' => $uri));
+      $request = new Request(['file' => $uri]);
       return $this->fileDownloadController->download($request, 'temporary');
     }
   }

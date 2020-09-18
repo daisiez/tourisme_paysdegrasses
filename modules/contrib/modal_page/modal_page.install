@@ -8,23 +8,127 @@
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Serialization\Yaml;
 use Drupal\Core\Url;
+use Drupal\modal_page\Helper\ModalPageFieldHelper;
+use Drupal\modal_page\Entity\Modal;
+
+/**
+ * Insert new Modal with Release Information.
+ */
+function modal_page_update_8209() {
+
+  $title = t('Modal Page 4 is available - Please check the news on this release');
+
+  $body = '<h1>' . t('Thank you for use Modal Page') . '</h1>';
+  $body .= '<br>';
+  $body .= '<h2>' . t('New version is available with this features:') . '</h2>';
+  $body .= '<br>';
+  $body .= '<ul>';
+  $body .= '<li>' . t('Modal Page with Config Entity;') . '</li>';
+  $body .= '<li>' . t('Now you can export / import your Modals using Configuration Management;') . '</li>';
+  $body .= '<li>' . t('You can use drush config:export and drush config:import;') . '</li>';
+  $body .= '<li>' . t('Script to migrate all Modals to the new version;') . '</li>';
+  $body .= '<li>' . t('just run update.php or drush updb and enjoy.') . '</li>';
+  $body .= '</ul><br>';
+  // @codingStandardsIgnoreLine
+  $body .= '<p>' . t('Upgrade and join us! If liked, please give us a') . ' <a href="https://www.drupal.org/project/modal_page" target="blank">' . t('star') . '</a> :)</p>';
+
+  $type = 'page';
+  $pages = '/admin/*';
+
+  $modal = Modal::create([
+    'title' => $title,
+    'body' => $body,
+    'type' => $type,
+    'pages' => $pages,
+    'roles' => ['administrator', 'authenticated'],
+  ]);
+
+  $modal->save();
+
+  \Drupal::service('cache.render')->invalidateAll();
+}
+
+/**
+ * Created new field to restrict Modal by Role.
+ */
+function modal_page_update_8208() {
+  $modalPageFieldHelper = new ModalPageFieldHelper();
+  $fieldRole = $modalPageFieldHelper->getFieldRole();
+  \Drupal::entityDefinitionUpdateManager()->installFieldStorageDefinition('roles', 'modal_page_modal', 'modal_page_modal', $fieldRole);
+}
+
+/**
+ * Created new field "Don't show again".
+ */
+function modal_page_update_8207() {
+  $field_storage_definition = BaseFieldDefinition::create('boolean')
+    ->setLabel(t("Enable <b>Don't show again</b> option"))
+    ->setDefaultValue(TRUE)
+    ->setDisplayConfigurable('form', TRUE)
+    ->setDisplayOptions('form', [
+      'type' => 'boolean_checkbox',
+      'settings' => [
+        'display_label' => TRUE,
+      ],
+      'weight' => -5,
+    ]);
+
+  \Drupal::entityDefinitionUpdateManager()->installFieldStorageDefinition('enable_dont_show_again_option', 'modal_page_modal', 'modal_page_modal', $field_storage_definition);
+
+  $field_to_be_updated = ['enable_dont_show_again_option' => TRUE];
+
+  modal_page_update_modal_table($field_to_be_updated);
+
+  \Drupal::service('cache.render')->invalidateAll();
+}
+
+/**
+ * Update on Modal Views to be more organized.
+ */
+function modal_page_update_8206() {
+  update_modal_page_views();
+}
+
+/**
+ * Create Auto Open Feature.
+ */
+function modal_page_update_8205() {
+
+  $field_storage_definition = BaseFieldDefinition::create('boolean')
+    ->setLabel(t("Auto Open"))
+    ->setDefaultValue(TRUE)
+    ->setDisplayConfigurable('form', TRUE)
+    ->setDisplayOptions('form', [
+      'type' => 'boolean_checkbox',
+      'settings' => [
+        'display_label' => TRUE,
+      ],
+      'weight' => -5,
+    ]);
+
+  \Drupal::entityDefinitionUpdateManager()->installFieldStorageDefinition('auto_open', 'modal_page_modal', 'modal_page_modal', $field_storage_definition);
+
+  $field_to_be_updated = ['auto_open' => TRUE];
+
+  modal_page_update_modal_table($field_to_be_updated);
+
+  \Drupal::service('cache.render')->invalidateAll();
+}
+
+/**
+ * Add new field on entity to open modal by element click.
+ */
+function modal_page_update_8204() {
+  update_entity_field_element_click();
+}
 
 /**
  * Implements hook_update_N().
+ *
+ * Hook to update views settings.
  */
-function modal_page_update_8201() {
-
-  if (empty(\Drupal::moduleHandler()->moduleExists('views'))) {
-    return FALSE;
-  }
-
-  $config_views_path = drupal_get_path('module', 'modal_page') . '/config/optional/views.view.list_modal.yml';
-
-  $data = Yaml::decode(file_get_contents($config_views_path));
-
-  \Drupal::configFactory()->getEditable('views.view.list_modal')->setData($data)->save(TRUE);
-
-  \Drupal::service('cache.render')->invalidateAll();
+function modal_page_update_8203() {
+  update_modal_page_views();
 }
 
 /**
@@ -37,6 +141,13 @@ function modal_page_update_8202() {
   populate_published_field();
 
   \Drupal::service('cache.render')->invalidateAll();
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function modal_page_update_8201() {
+  update_modal_page_views();
 }
 
 /**
@@ -93,16 +204,92 @@ function populate_published_field() {
 }
 
 /**
+ * Update views settings.
+ */
+function update_modal_page_views() {
+  if (empty(\Drupal::moduleHandler()->moduleExists('views'))) {
+    return FALSE;
+  }
+
+  $config_views_path = drupal_get_path('module', 'modal_page') . '/config/optional/views.view.list_modal.yml';
+
+  $data = Yaml::decode(file_get_contents($config_views_path));
+
+  \Drupal::configFactory()->getEditable('views.view.list_modal')->setData($data)->save(TRUE);
+
+  \Drupal::service('cache.render')->invalidateAll();
+}
+
+/**
+ * Create field to open modal by element click.
+ */
+function update_entity_field_element_click() {
+  $field_storage_definition = BaseFieldDefinition::create('string')
+    ->setLabel(t('Open this modal clicking on this element'))
+    ->setDescription(t('Example: <b>.open-modal-welcome</b>'))
+    ->setRequired(FALSE)
+    ->setSettings([
+      'max_length' => 255,
+      'text_processing' => 0,
+    ])
+    ->setDefaultValue(NULL)
+    ->setDisplayOptions('view', [
+      'label' => 'above',
+      'type' => 'string',
+      'weight' => -5,
+    ])
+    ->setDisplayOptions('form', [
+      'type' => 'string_textfield',
+      'weight' => -5,
+    ])
+    ->setDisplayConfigurable('form', TRUE)
+    ->setDisplayConfigurable('view', TRUE);
+
+  \Drupal::entityDefinitionUpdateManager()->installFieldStorageDefinition('open_modal_on_element_click', 'modal_page_modal', 'modal_page_modal', $field_storage_definition);
+}
+
+/**
+ * Update Modal Page Table.
+ */
+function modal_page_update_modal_table(array $fields) {
+
+  if (empty(\Drupal::service('database')->schema()->tableExists('modal'))) {
+    return FALSE;
+  }
+
+  $database = \Drupal::service('database');
+  $database->update('modal')->fields($fields)->execute();
+
+  return TRUE;
+}
+
+/**
  * Implements hook_install().
  */
 function modal_page_install() {
+
+  $title = 'Thank you for installing Modal Page';
+  $body = '<p>You can create your Modal at <a href="/admin/structure/modal/add">Structure » Modal » Add Modal</a></p>';
+  $body .= '<p>Have fun :)</p>';
+  $body .= '<p>If liked, give us a <a href="https://www.drupal.org/project/modal_page" target="blank">star</a></p>';
+  $type = 'page';
+  $pages = '/admin/*';
+
+  $modal = Modal::create([
+    'title' => $title,
+    'body' => $body,
+    'type' => $type,
+    'pages' => $pages,
+    'roles' => ['administrator', 'authenticated'],
+  ]);
+
+  $modal->save();
+
+  \Drupal::service('cache.render')->invalidateAll();
+
   $messenger = \Drupal::messenger();
-  $messenger->addStatus(t('Thanks for installing Modal Page'));
-  $messenger->addStatus(t('Create your Modal at <a href="@url_settings">@url_settings</a>', [
-    '@url_settings' => Url::fromRoute('modal_page.default')->toString(),
-  ]));
-  $messenger->addStatus(t('Just check if the js bootstrap (bootstrap.min.js) is already loaded elsewhere,'));
-  $messenger->addStatus(t('If yes then check settings called (Dont load external JS Bootstrap) at: <a href="@modal_page_settings">@modal_page_settings</a>', [
+
+  $messenger->addStatus(t('Modal Page load bootstrap.min.js by default, if this library is already loaded in other place, you can check a option <b>Don\'t load external JS Bootstrap</b> on <a href="@modal_page_settings">Modal Settings</a>', [
     '@modal_page_settings' => Url::fromRoute('modal_page.settings')->toString(),
   ]));
 }

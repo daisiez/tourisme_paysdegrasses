@@ -4,7 +4,9 @@ namespace Drupal\features;
 
 use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Psr\Log\LoggerInterface;
 
 /**
  * Class responsible for performing package generation.
@@ -34,6 +36,20 @@ class FeaturesGenerator implements FeaturesGeneratorInterface {
   protected $assigner;
 
   /**
+   * The messenger.
+   *
+   * @var \Drupal\Core\Messenger\MessengerInterface
+   */
+  protected $messenger;
+
+  /**
+   * A logger instance.
+   *
+   * @var \Psr\Log\LoggerInterface
+   */
+  protected $logger;
+
+  /**
    * Local cache for package generation method instances.
    *
    * @var array
@@ -44,14 +60,22 @@ class FeaturesGenerator implements FeaturesGeneratorInterface {
    * Constructs a new FeaturesGenerator object.
    *
    * @param \Drupal\features\FeaturesManagerInterface $features_manager
-   *    The features manager.
+   *   The features manager.
    * @param \Drupal\Component\Plugin\PluginManagerInterface $generator_manager
    *   The package generation methods plugin manager.
+   * @param \Drupal\features\FeaturesAssignerInterface $assigner
+   *   The feature assigner interface.
+   * @param \Drupal\Core\Messenger\MessengerInterface $messenger
+   *   The messenger.
+   * @param \Psr\Log\LoggerInterface $logger
+   *   A logger instance.
    */
-  public function __construct(FeaturesManagerInterface $features_manager, PluginManagerInterface $generator_manager, FeaturesAssignerInterface $assigner) {
+  public function __construct(FeaturesManagerInterface $features_manager, PluginManagerInterface $generator_manager, FeaturesAssignerInterface $assigner, MessengerInterface $messenger, LoggerInterface $logger) {
     $this->featuresManager = $features_manager;
     $this->generatorManager = $generator_manager;
     $this->assigner = $assigner;
+    $this->messenger = $messenger;
+    $this->logger = $logger;
   }
 
   /**
@@ -69,13 +93,13 @@ class FeaturesGenerator implements FeaturesGeneratorInterface {
    * {@inheritdoc}
    */
   public function reset() {
-    $this->methods = array();
+    $this->methods = [];
   }
 
   /**
    * {@inheritdoc}
    */
-  public function applyGenerationMethod($method_id, array $packages = array(), FeaturesBundleInterface $bundle = NULL) {
+  public function applyGenerationMethod($method_id, array $packages = [], FeaturesBundleInterface $bundle = NULL) {
     $method = $this->getGenerationMethodInstance($method_id);
     $method->prepare($packages, $bundle);
     return $method->generate($packages, $bundle);
@@ -107,7 +131,7 @@ class FeaturesGenerator implements FeaturesGeneratorInterface {
    */
   protected function getGenerationMethodInstance($method_id) {
     if (!isset($this->methods[$method_id])) {
-      $instance = $this->generatorManager->createInstance($method_id, array());
+      $instance = $this->generatorManager->createInstance($method_id, []);
       $instance->setFeaturesManager($this->featuresManager);
       $instance->setAssigner($this->assigner);
       $this->methods[$method_id] = $instance;
@@ -118,7 +142,7 @@ class FeaturesGenerator implements FeaturesGeneratorInterface {
   /**
    * {@inheritdoc}
    */
-  public function generatePackages($method_id, FeaturesBundleInterface $bundle, array $package_names = array()) {
+  public function generatePackages($method_id, FeaturesBundleInterface $bundle, array $package_names = []) {
     $this->featuresManager->setPackageBundleNames($bundle, $package_names);
     return $this->generate($method_id, $bundle, $package_names);
   }
@@ -144,7 +168,7 @@ class FeaturesGenerator implements FeaturesGeneratorInterface {
    *   - 'message': a message about the result of the operation.
    *   - 'variables': an array of substitutions to be used in the message.
    */
-  protected function generate($method_id, FeaturesBundleInterface $bundle, array $package_names = array()) {
+  protected function generate($method_id, FeaturesBundleInterface $bundle, array $package_names = []) {
     $packages = $this->featuresManager->getPackages();
 
     // Filter out the packages that weren't requested.
@@ -162,10 +186,10 @@ class FeaturesGenerator implements FeaturesGeneratorInterface {
     foreach ($return as $message) {
       if ($message['display']) {
         $type = $message['success'] ? 'status' : 'error';
-        drupal_set_message($this->t($message['message'], $message['variables']), $type);
+        $this->messenger->addMessage($this->t($message['message'], $message['variables']), $type);
       }
       $type = $message['success'] ? 'notice' : 'error';
-      \Drupal::logger('features')->{$type}($message['message'], $message['variables']);
+      $this->logger->{$type}($message['message'], $message['variables']);
     }
     return $return;
   }

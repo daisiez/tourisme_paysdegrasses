@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\color_field\Plugin\Field\FieldFormatter\ColorFieldFormatterText.
- */
-
 namespace Drupal\color_field\Plugin\Field\FieldFormatter;
 
 use Drupal\color_field\Plugin\Field\FieldType\ColorFieldType;
@@ -31,10 +26,10 @@ class ColorFieldFormatterText extends FormatterBase {
    * {@inheritdoc}
    */
   public static function defaultSettings() {
-    return array(
+    return [
       'format' => 'hex',
       'opacity' => TRUE,
-    ) + parent::defaultSettings();
+    ] + parent::defaultSettings();
   }
 
   /**
@@ -45,27 +40,32 @@ class ColorFieldFormatterText extends FormatterBase {
 
     $elements = [];
 
-    $elements['format'] = array(
+    $elements['format'] = [
       '#type' => 'select',
-      '#title' => t('Format'),
+      '#title' => $this->t('Format'),
       '#options' => $this->getColorFormat(),
       '#default_value' => $this->getSetting('format'),
-    );
+    ];
 
     if ($opacity) {
-      $elements['opacity'] = array(
+      $elements['opacity'] = [
         '#type' => 'checkbox',
-        '#title' => t('Display opacity'),
+        '#title' => $this->t('Display opacity'),
         '#default_value' => $this->getSetting('opacity'),
-      );
+      ];
     }
 
     return $elements;
   }
 
   /**
+   * This function is used to get the color format.
+   *
    * @param string $format
+   *   Format is of string type.
+   *
    * @return array|string
+   *   Returns array or string.
    */
   protected function getColorFormat($format = NULL) {
     $formats = [];
@@ -87,12 +87,12 @@ class ColorFieldFormatterText extends FormatterBase {
 
     $summary = [];
 
-    $summary[] = t('@format', array(
+    $summary[] = $this->t('@format', [
       '@format' => $this->getColorFormat($settings['format']),
-    ));
+    ]);
 
     if ($opacity && $settings['opacity']) {
-      $summary[] = t('Display with opacity.');
+      $summary[] = $this->t('Display with opacity.');
     }
 
     return $summary;
@@ -124,16 +124,18 @@ class ColorFieldFormatterText extends FormatterBase {
       case 'hex':
         if ($opacity && $settings['opacity']) {
           $output = $color_hex->toString(TRUE);
-        } else {
+        }
+        else {
           $output = $color_hex->toString(FALSE);
         }
         break;
 
       case 'rgb':
         if ($opacity && $settings['opacity']) {
-          $output = $color_hex->toRGB()->toString(TRUE);
-        } else {
-          $output = $color_hex->toRGB()->toString(FALSE);
+          $output = $color_hex->toRgb()->toString(TRUE);
+        }
+        else {
+          $output = $color_hex->toRgb()->toString(FALSE);
         }
         break;
     }

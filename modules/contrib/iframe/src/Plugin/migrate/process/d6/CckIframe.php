@@ -10,6 +10,8 @@ use Drupal\migrate\Row;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
+ * Class CckIframe.
+ *
  * @MigrateProcessPlugin(
  *   id = "d6_cck_iframe"
  * )
@@ -47,20 +49,21 @@ class CckIframe extends ProcessPluginBase implements ContainerFactoryPluginInter
         $attributes = unserialize($attributes);
       }
       catch (Exception $e) {
-        # ignore and set default attributes were only optional and ar not necessarily required
-        $attributes = array();
+        // Ignore and set default attributes were
+        // Only optional and ar not necessarily required.
+        $attributes = [];
       }
     }
 
     // Massage the values into the correct form for the iframe.
-    foreach($attributes as $akey => $aval) {
+    foreach ($attributes as $akey => $aval) {
       if (isset($akey)) {
-        $route[$akey] = (string)$aval;
+        $route[$akey] = (string) $aval;
       }
     }
-    $route['url'] = (string)$value['url'];
-    $route['title'] = (string)$value['title_value'];
-    $route['tokensupport'] = (int)$value['enable_tokens'];
+    $route['url'] = (string) $value['url'];
+    $route['title'] = (string) $value['title_value'];
+    $route['tokensupport'] = (int) $value['enable_tokens'];
     return $route;
   }
 

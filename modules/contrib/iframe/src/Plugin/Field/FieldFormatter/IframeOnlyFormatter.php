@@ -3,11 +3,14 @@
 namespace Drupal\iframe\Plugin\Field\FieldFormatter;
 
 use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Render\Markup;
 
 /**
+ * Class IframeOnlyFormatter.
+ *
  * @FieldFormatter(
  *  id = "iframe_only",
- *  label = @Translation("IFrame without title"),
+ *  label = @Translation("Iframe without title"),
  *  field_types = {"iframe"}
  * )
  */
@@ -17,7 +20,7 @@ class IframeOnlyFormatter extends IframeDefaultFormatter {
    * {@inheritdoc}
    */
   public function viewElements(FieldItemListInterface $items, $langcode) {
-    $elements = array();
+    $elements = [];
 
     foreach ($items as $delta => $item) {
       if (empty($item->url)) {
@@ -26,10 +29,10 @@ class IframeOnlyFormatter extends IframeDefaultFormatter {
       if (!isset($item->title)) {
         $item->title = '';
       }
-      $elements[$delta] = array(
-        '#markup' => IframeDefaultFormatter::iframe_iframe('', $item->url, $item),
-        '#allowed_tags' => array('iframe', 'a', 'h3'),
-      );
+      $elements[$delta] = [
+        '#markup' => Markup::create(IframeDefaultFormatter::iframeIframe('', $item->url, $item)),
+        '#allowed_tags' => ['iframe', 'a', 'h3', 'style'],
+      ];
     }
     return $elements;
   }

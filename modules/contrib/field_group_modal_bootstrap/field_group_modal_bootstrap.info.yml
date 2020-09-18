@@ -2,13 +2,12 @@ name: Field Group Modal Bootstrap
 type: module
 description: Provides a modal Bootstrap window from field group elements.
 package: Fields
-# core: 8.x
+core: 8.x
 php: 7.0
 dependencies:
   - field_group:field_group
 
-# Information added by Drupal.org packaging script on 2018-02-25
-version: '8.x-3.0-beta1'
-core: '8.x'
+# Information added by Drupal.org packaging script on 2019-12-04
+version: '8.x-3.0-beta2'
 project: 'field_group_modal_bootstrap'
-datestamp: 1519554487
+datestamp: 1575456790

@@ -76,7 +76,7 @@ class ContextConfig {
    * @param string $context_name
    *   The name of the context.
    * @param mixed $value
-   *   The value to set for the context. The value must he a valid value for the
+   *   The value to set for the context. The value must be a valid value for the
    *   context's data type, unless a data processor takes care of processing it
    *   to a valid value.
    *
@@ -164,7 +164,7 @@ class ContextConfig {
    * @return array
    *   The config array, with the following keys set:
    *   - context_map: An array of data selectors, keyed by context name.
-   *   - context An array of context values, keyed by context.
+   *   - context_values: An array of context values, keyed by context name.
    *   - context_processors: An array of data processor config, keyed by context
    *     name and process plugin id.
    *   - provides_mapping: An array of context names to use for provided
@@ -181,7 +181,7 @@ class ContextConfig {
    * @param \Drupal\Core\Plugin\ContextAwarePluginInterface $plugin
    *   An instance of the plugin for which the config has been created.
    *
-   * @todo: Implement.
+   * @todo Implement.
    */
   public function checkConfig(CoreContextAwarePluginInterface $plugin) {
     // @todo.

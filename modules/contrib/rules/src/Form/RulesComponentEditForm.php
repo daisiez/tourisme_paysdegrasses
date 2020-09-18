@@ -40,6 +40,10 @@ class RulesComponentEditForm extends RulesComponentFormBase {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
+    // CSS to make form easier to use. Load this at end so we can override
+    // styles added by #theme table.
+    $form['#attached']['library'][] = 'rules/rules_ui.styles';
+
     $form = $this->rulesUiHandler->getForm()->buildForm($form, $form_state);
     return parent::form($form, $form_state);
   }
@@ -72,6 +76,8 @@ class RulesComponentEditForm extends RulesComponentFormBase {
    */
   public function save(array $form, FormStateInterface $form_state) {
     $this->rulesUiHandler->getForm()->submitForm($form, $form_state);
+    $component = $this->rulesUiHandler->getComponent();
+    $this->entity->updateFromComponent($component);
 
     // Persist changes by saving the entity.
     parent::save($form, $form_state);
@@ -79,7 +85,7 @@ class RulesComponentEditForm extends RulesComponentFormBase {
     // Also remove the temporarily stored component, it has been persisted now.
     $this->rulesUiHandler->clearTemporaryStorage();
 
-    drupal_set_message($this->t('Rule component %label has been updated.', ['%label' => $this->entity->label()]));
+    $this->messenger()->addMessage($this->t('Rule component %label has been updated.', ['%label' => $this->entity->label()]));
   }
 
   /**
@@ -87,7 +93,7 @@ class RulesComponentEditForm extends RulesComponentFormBase {
    */
   public function cancel(array $form, FormStateInterface $form_state) {
     $this->rulesUiHandler->clearTemporaryStorage();
-    drupal_set_message($this->t('Canceled.'));
+    $this->messenger()->addMessage($this->t('Canceled.'));
     $form_state->setRedirect('entity.rules_component.collection');
   }
 

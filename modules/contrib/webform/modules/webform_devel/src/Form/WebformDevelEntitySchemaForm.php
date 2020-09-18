@@ -66,12 +66,12 @@ class WebformDevelEntitySchemaForm extends EntityForm {
 
       foreach ($element as $key => $value) {
         if ($key === 'options') {
-          $value = implode('; ', array_slice($value, 0, 12)) . (count($value) > 12 ? '; ...' : '');
+          $value = implode('; ', array_slice($value, 0, 12)) . (count($value) > 12 ? '; …' : '');
         }
         $rows[$element_key][$key] = ['#markup' => $value];
       }
 
-      if ($element['datatype'] == 'Composite') {
+      if ($element['datatype'] === 'Composite') {
         $rows[$element_key]['#attributes']['class'][] = 'webform-devel-schema-composite';
       }
 

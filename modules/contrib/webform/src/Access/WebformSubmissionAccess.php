@@ -12,16 +12,29 @@ use Drupal\webform\WebformSubmissionInterface;
 class WebformSubmissionAccess {
 
   /**
-   * Check whether a webform submissions' webform has wizard pages.
+   * Check whether a webform submissions' webform has wizard pages/cards.
    *
    * @param \Drupal\webform\WebformSubmissionInterface $webform_submission
-   *   A webform submisison.
+   *   A webform submission.
    *
    * @return \Drupal\Core\Access\AccessResultInterface
    *   The access result.
    */
   public static function checkWizardPagesAccess(WebformSubmissionInterface $webform_submission) {
-    return AccessResult::allowedIf($webform_submission->getWebform()->hasWizardPages());
+    // Check wizard pages.
+    $has_wizard_pages = ($webform_submission->getWebform()->hasWizardPages());
+
+    // Check cards.
+    if (\Drupal::moduleHandler()->moduleExists('webform_cards')) {
+      /** @var \Drupal\webform_cards\WebformCardsManagerInterface $webform_cards_manager */
+      $webform_cards_manager = \Drupal::service('webform_cards.manager');
+      $has_cards = $webform_cards_manager->hasCards($webform_submission->getWebform());
+    }
+    else {
+      $has_cards = FALSE;
+    }
+
+    return AccessResult::allowedIf($has_wizard_pages || $has_cards);
   }
 
   /**
@@ -36,11 +49,12 @@ class WebformSubmissionAccess {
    *   The access result.
    */
   public static function checkResendAccess(WebformSubmissionInterface $webform_submission, AccountInterface $account) {
-    $webform = $webform_submission->getWebform();
-    if ($webform->access('submission_update_any', $account) && $webform->hasMessageHandler()) {
+    if ($webform_submission->getWebform()->hasMessageHandler()) {
       return AccessResult::allowed();
     }
-    return AccessResult::forbidden();
+    else {
+      return AccessResult::forbidden();
+    }
   }
 
 }

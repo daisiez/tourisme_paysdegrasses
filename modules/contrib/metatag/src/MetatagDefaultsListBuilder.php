@@ -4,26 +4,54 @@ namespace Drupal\metatag;
 
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
  * Provides a listing of Metatag defaults entities.
  */
 class MetatagDefaultsListBuilder extends ConfigEntityListBuilder {
 
+  use StringTranslationTrait;
+
   /**
    * {@inheritdoc}
    */
-  public function load() {
-    $entities = parent::load();
+  protected function getEntityIds() {
+    $query = $this->getStorage()->getQuery()
+      ->condition('id', 'global', '<>');
 
-    // Move the Global defaults to the top. Don't assume that the global config
-    // exists, it might have been removed.
-    if (isset($entities['global'])) {
-      return ['global' => $entities['global']] + $entities;
+    // Only add the pager if a limit is specified.
+    if ($this->limit) {
+      $query->pager($this->limit);
     }
-    else {
-      return $entities;
+
+    $entity_ids = $query->execute();
+
+    // Load global entity always.
+    return $entity_ids + $this->getParentIds($entity_ids);
+  }
+
+  /**
+   * Gets the parent entity ids for the list of entities to load.
+   *
+   * @param array $entity_ids
+   *   The metatag entity ids.
+   *
+   * @return array
+   *   The list of parents to load
+   */
+  protected function getParentIds(array $entity_ids) {
+    $parents = ['global' => 'global'];
+    foreach ($entity_ids as $entity_id) {
+      if (strpos($entity_id, '__') !== FALSE) {
+        $entity_id_array = explode('__', $entity_id);
+        $parent = reset($entity_id_array);
+        $parents[$parent] = $parent;
+      }
     }
+    $parents_query = $this->getStorage()->getQuery()
+      ->condition('id', $parents, 'IN');
+    return $parents_query->execute();
   }
 
   /**
@@ -31,6 +59,7 @@ class MetatagDefaultsListBuilder extends ConfigEntityListBuilder {
    */
   public function buildHeader() {
     $header['label'] = $this->t('Type');
+    $header['status'] = $this->t('Status');
     return $header + parent::buildHeader();
   }
 
@@ -39,6 +68,7 @@ class MetatagDefaultsListBuilder extends ConfigEntityListBuilder {
    */
   public function buildRow(EntityInterface $entity) {
     $row['label'] = $this->getLabelAndConfig($entity);
+    $row['status'] = $entity->status() ? $this->t('Active') : $this->t('Disabled');
     return $row + parent::buildRow($entity);
   }
 
@@ -52,7 +82,7 @@ class MetatagDefaultsListBuilder extends ConfigEntityListBuilder {
     if (in_array($entity->id(), MetatagManager::protectedDefaults())) {
       unset($operations['delete']);
       $operations['revert'] = [
-        'title' => t('Revert'),
+        'title' => $this->t('Revert'),
         'weight' => $operations['edit']['weight'] + 1,
         'url' => $entity->toUrl('revert-form'),
       ];
@@ -64,7 +94,7 @@ class MetatagDefaultsListBuilder extends ConfigEntityListBuilder {
   /**
    * Renders the Metatag defaults label plus its configuration.
    *
-   * @param Drupal\Core\Entity\EntityInterface $entity
+   * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The Metatag defaults entity.
    *
    * @return array
@@ -80,12 +110,12 @@ class MetatagDefaultsListBuilder extends ConfigEntityListBuilder {
     }
     if (strpos($entity->id(), '__') !== FALSE) {
       $prefix .= '<div class="indentation"></div>';
-      list($entity_label, $bundle_label) = explode(': ', $entity->get('label'));
-      $inherits .= ', ' . $entity_label;
+      $entity_label = explode(': ', $entity->get('label'));
+      $inherits .= ', ' . $entity_label[0];
     }
 
     if (!empty($inherits)) {
-      $output .= '<div><p>' . t('Inherits meta tags from: @inherits', [
+      $output .= '<div><p>' . $this->t('Inherits meta tags from: @inherits', [
         '@inherits' => $inherits,
       ]) . '</p></div>';
     }
@@ -111,6 +141,16 @@ class MetatagDefaultsListBuilder extends ConfigEntityListBuilder {
         ],
       ],
     ];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function render() {
+    if (\Drupal::state()->get('system.maintenance_mode')) {
+      \Drupal::messenger()->addMessage($this->t('Please note that while the site is in maintenance mode none of the usual meta tags will be output.'));
+    }
+    return parent::render();
   }
 
 }

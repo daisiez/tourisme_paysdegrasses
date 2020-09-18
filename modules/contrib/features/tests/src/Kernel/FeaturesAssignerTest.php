@@ -2,12 +2,11 @@
 
 namespace Drupal\Tests\features\Kernel;
 
-use Drupal\Core\Config\StorageInterface;
-use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\features\FeaturesBundleInterface;
 use Drupal\KernelTests\KernelTestBase;
 
 /**
+ * The Feature assigner test.
+ *
  * @group features
  */
 class FeaturesAssignerTest extends KernelTestBase {
@@ -17,6 +16,15 @@ class FeaturesAssignerTest extends KernelTestBase {
   public static $modules = ['system', 'config'];
 
   protected $strictConfigSchema = FALSE;
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp() {
+    parent::setUp();
+    // We need system.site in order to run $this->configImporter->import().
+    $this->installConfig('system');
+  }
 
   /**
    * Test bundle auto-creation during config import.
@@ -41,7 +49,7 @@ class FeaturesAssignerTest extends KernelTestBase {
     // Uninstall modules.
     $installer->uninstall(['features', 'test_feature']);
 
-    // Restore the config from after install..
+    // Restore the config from after install.
     $this->configImporter()->import();
 
     // Find the auto-created bundle.

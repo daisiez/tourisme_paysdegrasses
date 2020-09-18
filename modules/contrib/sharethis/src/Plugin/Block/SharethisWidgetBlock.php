@@ -4,12 +4,15 @@ namespace Drupal\sharethis\Plugin\Block;
 
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Config\ConfigFactory;
+use Drupal\Core\Controller\TitleResolverInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Config\Config;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\sharethis\SharethisManagerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Drupal\Core\Routing\CurrentRouteMatch;
 
 /**
  * Provides an 'Share this Widget' block.
@@ -44,6 +47,27 @@ class SharethisWidgetBlock extends BlockBase implements ContainerFactoryPluginIn
   protected $configFactory;
 
   /**
+   * The request stack.
+   *
+   * @var \Symfony\Component\HttpFoundation\RequestStack
+   */
+  protected $requestStack;
+
+  /**
+   * The current route match.
+   *
+   * @var \Drupal\Core\Routing\CurrentRouteMatch
+   */
+  protected $routeMatch;
+
+  /**
+   * The title resolver.
+   *
+   * @var \Drupal\Core\Controller\TitleResolverInterface
+   */
+  protected $titleResolver;
+
+  /**
    * Constructs an SharethisBlock object.
    *
    * @param array $configuration
@@ -58,12 +82,21 @@ class SharethisWidgetBlock extends BlockBase implements ContainerFactoryPluginIn
    *   The sharethis manager service.
    * @param \Drupal\Core\Config\ConfigFactory $config_factory
    *   The Config factory.
+   * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
+   *   The request stack.
+   * @param \Drupal\Core\Routing\CurrentRouteMatch $route_match
+   *   The current route match.
+   * @param \Drupal\Core\Controller\TitleResolverInterface $title_resolver
+   *   The title resolver.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, Config $sharethis_settings, SharethisManagerInterface $sharethis_manager, ConfigFactory $config_factory) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, Config $sharethis_settings, SharethisManagerInterface $sharethis_manager, ConfigFactory $config_factory, RequestStack $request_stack, CurrentRouteMatch $route_match, TitleResolverInterface $title_resolver) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->sharethisSettings = $sharethis_settings;
     $this->sharethisManager = $sharethis_manager;
     $this->configFactory = $config_factory;
+    $this->requestStack = $request_stack;
+    $this->routeMatch = $route_match;
+    $this->titleResolver = $title_resolver;
   }
 
   /**
@@ -76,7 +109,10 @@ class SharethisWidgetBlock extends BlockBase implements ContainerFactoryPluginIn
       $plugin_definition,
       $container->get('config.factory')->get('sharethis.settings'),
       $container->get('sharethis.manager'),
-      $container->get('config.factory')
+      $container->get('config.factory'),
+      $container->get('request_stack'),
+      $container->get('current_route_match'),
+      $container->get('title_resolver')
     );
   }
 
@@ -84,10 +120,10 @@ class SharethisWidgetBlock extends BlockBase implements ContainerFactoryPluginIn
    * {@inheritdoc}
    */
   public function defaultConfiguration() {
-    return array(
+    return [
       'path' => "global",
       'external_path' => '',
-    );
+    ];
   }
 
   /**
@@ -97,28 +133,28 @@ class SharethisWidgetBlock extends BlockBase implements ContainerFactoryPluginIn
     $description = $this->t('Variable - Different per URL');
     $description .= '<br />';
     $description .= $this->t('External - Useful in iframes (Facebook Tabs, etc.)');
-    $form['sharethis_path'] = array(
+    $form['sharethis_path'] = [
       '#type' => 'select',
       '#title' => $this->t('Path to share'),
-      '#options' => array(
+      '#options' => [
         'global' => $this->t('Global'),
         'current' => $this->t('Variable'),
         'external' => $this->t('External URL'),
-      ),
+      ],
       '#description' => $description,
       '#default_value' => $this->configuration['sharethis_path'],
-    );
+    ];
 
-    $form['sharethis_path_external'] = array(
+    $form['sharethis_path_external'] = [
       '#type' => 'url',
       '#title' => $this->t('External URL'),
       '#default_value' => $this->configuration['sharethis_path_external'],
-      '#states' => array(
-        'visible' => array(
-          ':input[name="settings[sharethis_path]"]' => array('value' => 'external'),
-        ),
-      ),
-    );
+      '#states' => [
+        'visible' => [
+          ':input[name="settings[sharethis_path]"]' => ['value' => 'external'],
+        ],
+      ],
+    ];
     return $form;
   }
 
@@ -146,37 +182,35 @@ class SharethisWidgetBlock extends BlockBase implements ContainerFactoryPluginIn
         $path = ($this->configuration['sharethis_path'] == 'global') ? '<front>' : $current_path;
 
         global $base_url;
-        $path_obj = Url::fromUri($base_url . '/' . $path,
-          array(
+        $path_obj = Url::fromUri($base_url . $path,
+          [
             'absolute' => TRUE,
-          )
+          ]
         );
         $mpath = $path_obj->toString();
       }
-      $request = \Drupal::request();
-      $route_match = \Drupal::routeMatch();
-      $title = \Drupal::service('title_resolver')
-        ->getTitle($request, $route_match->getRouteObject());
+      $request = $this->requestStack->getCurrentRequest();
+      $title = $this->titleResolver->getTitle($request, $this->routeMatch->getRouteObject());
       $title = is_object($title) ? $title->getUntranslatedString() : $title;
       $mtitle = ($this->configuration['sharethis_path'] == 'current') ? $title : $this->configFactory->get('system.site')
         ->get('name');
-      $markup = $this->sharethisManager->widgetContents(array(
+      $markup = $this->sharethisManager->widgetContents([
         'm_path' => $mpath,
         'm_title' => $mtitle,
-      ));
+      ]);
       return [
         '#theme' => 'sharethis_block',
         '#content' => $markup,
-        '#attached' => array(
-          'library' => array(
+        '#attached' => [
+          'library' => [
             'sharethis/sharethispickerexternalbuttonsws',
             'sharethis/sharethispickerexternalbuttons',
             'sharethis/sharethis',
-          ),
-          'drupalSettings' => array(
+          ],
+          'drupalSettings' => [
             'sharethis' => $st_js,
-          ),
-        ),
+          ],
+        ],
       ];
     }
   }

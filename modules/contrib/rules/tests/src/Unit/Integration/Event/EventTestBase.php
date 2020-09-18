@@ -22,11 +22,11 @@ abstract class EventTestBase extends RulesEntityIntegrationTestBase {
   /**
    * {@inheritdoc}
    */
-  public function setUp() {
+  protected function setUp() {
     parent::setUp();
     $this->moduleHandler->getModuleDirectories()
       ->willReturn(['rules' => __DIR__ . '/../../../../../']);
-    $this->eventManager = new RulesEventManager($this->moduleHandler->reveal());
+    $this->eventManager = new RulesEventManager($this->moduleHandler->reveal(), $this->entityTypeBundleInfo->reveal());
   }
 
 }

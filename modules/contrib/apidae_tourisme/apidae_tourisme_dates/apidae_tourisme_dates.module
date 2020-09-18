@@ -1,0 +1,20 @@
+<?php
+
+/**
+ * @file
+ * Contains hooks for module apidae_tourisme_dates.
+ */
+
+/**
+ * Implements hook_theme().
+ */
+function apidae_tourisme_dates_theme($existing, $type, $theme, $path) {
+  $themes['apidae_date'] = [
+    'render element' => 'elements',
+    'template' => 'apidae-date',
+    'variables' => [
+      'data' => [],
+    ],
+  ];
+  return $themes;
+}

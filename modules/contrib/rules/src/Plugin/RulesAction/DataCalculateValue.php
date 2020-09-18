@@ -11,30 +11,31 @@ use Drupal\rules\Core\RulesActionBase;
  *   id = "rules_data_calculate_value",
  *   label = @Translation("Calculates a numeric value"),
  *   category = @Translation("Data"),
- *   context = {
+ *   context_definitions = {
  *     "input_1" = @ContextDefinition("float",
  *       label = @Translation("Input value 1"),
  *       description = @Translation("The first input value for the calculation.")
  *     ),
  *     "operator" = @ContextDefinition("string",
  *       label = @Translation("Operator"),
- *       description = @Translation("The calculation operator.")
+ *       description = @Translation("The calculation operator."),
+ *       assignment_restriction = "input"
  *     ),
  *     "input_2" = @ContextDefinition("float",
  *       label = @Translation("Input value 2"),
  *       description = @Translation("The second input value for the calculation.")
- *     )
+ *     ),
  *   },
  *   provides = {
  *     "result" = @ContextDefinition("float",
  *       label = @Translation("Calculated result")
- *     )
+ *     ),
  *   }
  * )
  *
- * @todo: Add access callback information from Drupal 7.
- * @todo: Add defined operation options from Drupal 7.
- * @todo: If context args are integers, ensure that integers are returned.
+ * @todo Add access callback information from Drupal 7.
+ * @todo Add defined operation options from Drupal 7.
+ * @todo If context args are integers, ensure that integers are returned.
  */
 class DataCalculateValue extends RulesActionBase {
 

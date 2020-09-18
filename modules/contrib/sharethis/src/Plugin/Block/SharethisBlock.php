@@ -75,16 +75,19 @@ class SharethisBlock extends BlockBase implements ContainerFactoryPluginInterfac
       return [
         '#theme' => 'sharethis_block',
         '#content' => $markup,
-        '#attached' => array(
-          'library' => array(
+        '#attached' => [
+          'library' => [
             'sharethis/sharethispickerexternalbuttonsws',
             'sharethis/sharethispickerexternalbuttons',
             'sharethis/sharethis',
-          ),
-          'drupalSettings' => array(
+          ],
+          'drupalSettings' => [
             'sharethis' => $st_js,
-          ),
-        ),
+          ],
+        ],
+        '#cache' => [
+          'contexts' => ['url.path'],
+        ],
       ];
     }
   }

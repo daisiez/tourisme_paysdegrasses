@@ -6,10 +6,11 @@ use Drupal\Core\Config\Entity\ConfigDependencyManager;
 use Drupal\Core\Config\Entity\ConfigEntityDependency;
 
 /**
- * Class FeaturesConfigDependencyManager
+ * Class FeaturesConfigDependencyManager.
+ *
  * @package Drupal\features
  */
-class FeaturesConfigDependencyManager extends ConfigDependencyManager{
+class FeaturesConfigDependencyManager extends ConfigDependencyManager {
 
   protected $sorted_graph;
 
@@ -17,9 +18,9 @@ class FeaturesConfigDependencyManager extends ConfigDependencyManager{
    * {@inheritdoc}
    */
   public function getDependentEntities($type, $name) {
-    $dependent_entities = array();
+    $dependent_entities = [];
 
-    $entities_to_check = array();
+    $entities_to_check = [];
     if ($type == 'config') {
       $entities_to_check[] = $name;
     }
@@ -41,8 +42,14 @@ class FeaturesConfigDependencyManager extends ConfigDependencyManager{
       // dependent is at the top. For example, this ensures that fields are
       // always after field storages. This is because field storages need to be
       // created before a field.
-      $this->sorted_graph = $this->getGraph();
-      uasort($this->sorted_graph, array($this, 'sortGraph'));
+      $this->sorted_graph = $this
+        ->getGraph();
+      $sorts = $this
+        ->prepareMultisort($this->sorted_graph, [
+        'weight',
+        'name',
+      ]);
+      array_multisort($sorts['weight'], SORT_DESC, SORT_NUMERIC, $sorts['name'], SORT_ASC, SORT_NATURAL | SORT_FLAG_CASE, $this->sorted_graph);
     }
     return array_replace(array_intersect_key($this->sorted_graph, $dependencies), $dependencies);
   }

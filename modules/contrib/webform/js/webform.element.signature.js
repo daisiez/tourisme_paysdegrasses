@@ -3,7 +3,7 @@
  * JavaScript behaviors for signature pad integration.
  */
 
-(function ($, Drupal) {
+(function ($, Drupal, debounce) {
 
   'use strict';
 
@@ -30,20 +30,18 @@
         var $canvas = $wrapper.find('canvas');
         var $button = $wrapper.find(':button, :submit');
         var canvas = $canvas[0];
-        // Set height.
-        $canvas.attr('width', $wrapper.width());
-        $canvas.attr('height', $wrapper.width() / 3);
-        $(window).resize(function () {
+
+        var refresh = function () {
+          // Set dimensions.
           $canvas.attr('width', $wrapper.width());
           $canvas.attr('height', $wrapper.width() / 3);
-
-          // Resizing clears the canvas so we need to reset the signature pad.
+          // Set signature.
           signaturePad.clear();
           var value = $input.val();
           if (value) {
             signaturePad.fromDataURL(value);
           }
-        });
+        };
 
         // Initialize signature canvas.
         var options = $.extend({
@@ -53,40 +51,50 @@
         }, Drupal.webform.signaturePad.options);
         var signaturePad = new SignaturePad(canvas, options);
 
-        // Set value.
-        if (value) {
-          signaturePad.fromDataURL(value);
+        // Disable the signature pad when input is disabled or readonly.
+        if ($input.is(':disabled') || $input.is('[readonly]')) {
+          signaturePad.off();
+          $button.hide();
         }
+
+        // Set resize handler.
+        $(window).resize(debounce(refresh, 10));
 
         // Set reset handler.
         $button.on('click', function () {
           signaturePad.clear();
-          $input.val();
+          $input.val('');
           this.blur();
           return false;
         });
 
         // Input onchange clears signature pad if value is empty.
+        // Onchange events handlers are triggered when a webform is
+        // hidden or shown.
         // @see webform.states.js
+        // @see triggerEventHandlers()
         $input.on('change', function () {
-          if (!$input.val()) {
-            signaturePad.clear();
-          }
+          setTimeout(refresh, 1);
         });
 
-        // Turn signature pad off/on when the input is disabled/enabled.
+        // Turn signature pad off/on when the input
+        // is disabled/readonly/enabled.
         // @see webform.states.js
-        $input.on('webform:disabled', function () {
-          if ($input.is(':disabled')) {
+        $input.on('webform:disabled webform:readonly', function () {
+          if ($input.is(':disabled') || $input.is('[readonly]')) {
             signaturePad.off();
+            $button.hide();
           }
           else {
             signaturePad.on();
+            $button.show();
           }
         });
 
+        // Make sure that the signature pad is initialized.
+        setTimeout(refresh, 1);
       });
     }
   };
 
-})(jQuery, Drupal);
+})(jQuery, Drupal, Drupal.debounce);

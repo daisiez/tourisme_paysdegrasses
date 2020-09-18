@@ -11,15 +11,17 @@ use Drupal\rules\Core\RulesConditionBase;
  * @Condition(
  *   id = "rules_node_is_sticky",
  *   label = @Translation("Node is sticky"),
- *   category = @Translation("Node"),
- *   context = {
+ *   category = @Translation("Content"),
+ *   context_definitions = {
  *     "node" = @ContextDefinition("entity:node",
- *       label = @Translation("Node")
- *     )
+ *       label = @Translation("Node"),
+ *       description = @Translation("Specifies the node for which to evaluate the condition."),
+ *       assignment_restriction = "selector"
+ *     ),
  *   }
  * )
  *
- * @todo: Add access callback information from Drupal 7.
+ * @todo Add access callback information from Drupal 7.
  */
 class NodeIsSticky extends RulesConditionBase {
 

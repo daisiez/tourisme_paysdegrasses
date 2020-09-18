@@ -20,14 +20,14 @@ class UrlTest extends BrowserTestBase {
   /**
    * The first testing node.
    *
-   *  @var \Drupal\node\NodeInterface
+   * @var \Drupal\node\NodeInterface
    */
   protected $node1;
 
   /**
    * The second testing node.
    *
-   *  @var \Drupal\node\NodeInterface
+   * @var \Drupal\node\NodeInterface
    */
   protected $node2;
 
@@ -37,6 +37,11 @@ class UrlTest extends BrowserTestBase {
    * @var string[]
    */
   public static $modules = ['node', 'token', 'block'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}

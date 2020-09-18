@@ -59,10 +59,11 @@ function _webform_antibot_form(array &$form, FormStateInterface $form_state, $an
     '#return_value' => TRUE,
   ];
 
-  if ($antibot_state != WEBFORM_ANTIBOT_NEUTRAL) {
+  $antibot_state = (int) $antibot_state;
+  if ($antibot_state !== WEBFORM_ANTIBOT_NEUTRAL) {
     $form['third_party_settings']['antibot']['antibot']['#attributes']['disabled'] = 'disabled';
     $form_state->set('antibot_disabled', TRUE);
-    if ($antibot_state == WEBFORM_ANTIBOT_ENABLED_WEBFORM) {
+    if ($antibot_state === WEBFORM_ANTIBOT_ENABLED_WEBFORM) {
       $form['third_party_settings']['antibot']['antibot']['#default_value'] = 1;
       $form['third_party_settings']['antibot']['antibot']['#description'] = t('<a href=":href_webform">Antibot protection</a> is enabled for all webforms.', $t_args);
     }
@@ -137,7 +138,7 @@ function antibot_webform_third_party_settings_form_alter(&$form, FormStateInterf
  */
 function antibot_webform_submission_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   // Only add an Antibot when a webform is initially load.
-  // After a webform is submitted, via a multistep webform and/or saving a draft,
+  // After a webform is submitted, via a multi-step webform and/or saving a draft,
   // we can skip adding an Antibot.
   if ($form_state->isSubmitted()) {
     return;

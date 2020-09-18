@@ -5,7 +5,7 @@ namespace Drupal\views_bulk_operations\Form;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\user\PrivateTempStoreFactory;
+use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\views_bulk_operations\Service\ViewsBulkOperationsActionManager;
 use Drupal\views_bulk_operations\Service\ViewsBulkOperationsActionProcessorInterface;
 
@@ -19,7 +19,7 @@ class ConfirmAction extends FormBase {
   /**
    * User private temporary storage factory.
    *
-   * @var \Drupal\user\PrivateTempStoreFactory
+   * @var \Drupal\Core\TempStore\PrivateTempStoreFactory
    */
   protected $tempStoreFactory;
 
@@ -40,7 +40,7 @@ class ConfirmAction extends FormBase {
   /**
    * Constructor.
    *
-   * @param \Drupal\user\PrivateTempStoreFactory $tempStoreFactory
+   * @param \Drupal\Core\TempStore\PrivateTempStoreFactory $tempStoreFactory
    *   User private temporary storage factory.
    * @param \Drupal\views_bulk_operations\Service\ViewsBulkOperationsActionManager $actionManager
    *   Extended action manager object.
@@ -62,7 +62,7 @@ class ConfirmAction extends FormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('user.private_tempstore'),
+      $container->get('tempstore.private'),
       $container->get('plugin.manager.views_bulk_operations_action'),
       $container->get('views_bulk_operations.processor')
     );
@@ -86,8 +86,6 @@ class ConfirmAction extends FormBase {
     if (!isset($form_data['action_id'])) {
       return;
     }
-
-    $form_state->setStorage($form_data);
 
     if (!empty($form_data['entity_labels'])) {
       $form['list'] = [
@@ -113,6 +111,9 @@ class ConfirmAction extends FormBase {
         [$this, 'submitForm'],
       ],
     ];
+    $this->addCancelButton($form);
+
+    $form_state->set('views_bulk_operations', $form_data);
 
     return $form;
   }
@@ -121,7 +122,7 @@ class ConfirmAction extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $form_data = $form_state->getStorage();
+    $form_data = $form_state->get('views_bulk_operations');
     $this->deleteTempstoreData($form_data['view_id'], $form_data['display_id']);
     $this->actionProcessor->executeProcessing($form_data);
     $form_state->setRedirectUrl($form_data['redirect_url']);

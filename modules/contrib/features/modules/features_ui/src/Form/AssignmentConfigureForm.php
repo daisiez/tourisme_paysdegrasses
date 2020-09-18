@@ -69,8 +69,11 @@ class AssignmentConfigureForm extends FormBase {
   /**
    * Load the values from the bundle into the user input.
    * Used during Ajax callback since updating #default_values is ignored.
-   * @param $bundle_name
+   *
+   * @param mixed $bundle_name
+   *   The bundle name.
    * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form values.
    */
   protected function loadBundleValues($bundle_name, FormStateInterface &$form_state, $current_bundle, $enabled_methods, $methods_weight) {
     $input = $form_state->getUserInput();
@@ -85,14 +88,14 @@ class AssignmentConfigureForm extends FormBase {
       $input['bundle']['name'] = $current_bundle->getName();
       $input['bundle']['machine_name'] = $current_bundle->getMachineName();
       $input['bundle']['description'] = $current_bundle->getDescription();
-      $input['bundle']['is_profile'] = $current_bundle->isProfile() ? 1 : null;
+      $input['bundle']['is_profile'] = $current_bundle->isProfile() ? 1 : NULL;
       $input['bundle']['profile_name'] = $current_bundle->isProfile() ? $current_bundle->getProfileName() : '';
     }
 
     foreach ($methods_weight as $method_id => $weight) {
       $enabled = isset($enabled_methods[$method_id]);
       $input['weight'][$method_id] = $weight;
-      $input['enabled'][$method_id] = $enabled ? 1 : null;
+      $input['enabled'][$method_id] = $enabled ? 1 : NULL;
     }
 
     $form_state->setUserInput($input);
@@ -131,18 +134,18 @@ class AssignmentConfigureForm extends FormBase {
       }
       $load_values = TRUE;
     }
-    elseif ($trigger['#name'] == 'bundle[bundle_select]') {
-      $bundle_name = $form_state->getValue(array('bundle', 'bundle_select'));
+    elseif (isset($trigger['#name']) && $trigger['#name'] == 'bundle[bundle_select]') {
+      $bundle_name = $form_state->getValue(['bundle', 'bundle_select']);
       if ($bundle_name != self::NEW_BUNDLE_SELECT_VALUE) {
         $this->assigner->setCurrent($this->assigner->getBundle($bundle_name));
       }
       $load_values = TRUE;
     }
-    elseif ($trigger['#name'] == 'removebundle') {
+    elseif (isset($trigger['#name']) && $trigger['#name'] == 'removebundle') {
       $current_bundle = $this->assigner->loadBundle($bundle_name);
       $bundle_name = $current_bundle->getMachineName();
       $this->assigner->removeBundle($bundle_name);
-      return $this->redirect('features.assignment', array(''));
+      return $this->redirect('features.assignment', ['']);
     }
     if (!isset($current_bundle)) {
       switch ($bundle_name) {
@@ -151,9 +154,11 @@ class AssignmentConfigureForm extends FormBase {
           $current_bundle = $this->assigner->loadBundle();
           $bundle_name = $current_bundle->getMachineName();
           break;
+
         case self::NEW_BUNDLE_SELECT_VALUE:
           $current_bundle = $this->assigner->loadBundle(FeaturesBundleInterface::DEFAULT_BUNDLE);
           break;
+
         default:
           $current_bundle = $this->assigner->loadBundle($bundle_name);
           break;
@@ -177,28 +182,28 @@ class AssignmentConfigureForm extends FormBase {
       $this->loadBundleValues($bundle_name, $form_state, $current_bundle, $enabled_methods, $methods_weight);
     }
 
-    $form = array(
-      '#attached' => array(
-        'library' => array(
+    $form = [
+      '#attached' => [
+        'library' => [
           // Provides the copyFieldValue behavior invoked below.
           'system/drupal.system',
           'features_ui/drupal.features_ui.admin',
-        ),
-      ),
+        ],
+      ],
       // '#attributes' => array('class' => 'edit-bundles-wrapper'),
       '#tree' => TRUE,
       '#show_operations' => FALSE,
-      'weight' => array('#tree' => TRUE),
+      'weight' => ['#tree' => TRUE],
       '#prefix' => '<div id="edit-bundles-wrapper">',
       '#suffix' => '</div>',
-    );
+    ];
 
-    $form['bundle'] = array(
+    $form['bundle'] = [
       '#type' => 'fieldset',
       '#title' => $this->t('Bundle'),
       '#tree' => TRUE,
       '#weight' => -9,
-    );
+    ];
 
     if ($bundle_name == self::NEW_BUNDLE_SELECT_VALUE) {
       $default_values = [
@@ -220,86 +225,86 @@ class AssignmentConfigureForm extends FormBase {
         'profile_name' => $current_bundle->getProfileName(),
       ];
     }
-    $form['bundle']['bundle_select'] = array(
+    $form['bundle']['bundle_select'] = [
       '#title' => $this->t('Bundle'),
       '#title_display' => 'invisible',
       '#type' => 'select',
       '#options' => [self::NEW_BUNDLE_SELECT_VALUE => $this->t('--New--')] + $this->assigner->getBundleOptions(),
       '#default_value' => $default_values['bundle_select'],
-      '#ajax' => array(
+      '#ajax' => [
         'callback' => '::updateForm',
         'wrapper' => 'edit-bundles-wrapper',
-      ),
-    );
+      ],
+    ];
 
     // Don't show the remove button for the default bundle or when adding a new
     // bundle.
     if ($bundle_name != self::NEW_BUNDLE_SELECT_VALUE && !$current_bundle->isDefault()) {
-      $form['bundle']['remove'] = array(
+      $form['bundle']['remove'] = [
         '#type' => 'button',
         '#name' => 'removebundle',
         '#value' => $this->t('Remove bundle'),
-      );
+      ];
     }
 
-    $form['bundle']['name'] = array(
+    $form['bundle']['name'] = [
       '#title' => $this->t('Bundle name'),
       '#type' => 'textfield',
       '#description' => $this->t('A unique human-readable name of this bundle.'),
       '#default_value' => $default_values['name'],
       '#required' => TRUE,
       '#disabled' => $bundle_name == FeaturesBundleInterface::DEFAULT_BUNDLE,
-    );
+    ];
 
     // Don't allow changing the default bundle machine name.
     if ($bundle_name == FeaturesBundleInterface::DEFAULT_BUNDLE) {
-      $form['bundle']['machine_name'] = array(
+      $form['bundle']['machine_name'] = [
         '#type' => 'value',
         '#value' => $default_values['machine_name'],
-      );
+      ];
     }
     else {
-      $form['bundle']['machine_name'] = array(
+      $form['bundle']['machine_name'] = [
         '#title' => $this->t('Machine name'),
         '#type' => 'machine_name',
         '#required' => TRUE,
         '#default_value' => $default_values['machine_name'],
         '#description' => $this->t('A unique machine-readable name of this bundle.  Used to prefix exported packages. It must only contain lowercase letters, numbers, and underscores.'),
-        '#machine_name' => array(
-          'source' => array('bundle', 'name'),
-          'exists' => array($this, 'bundleExists'),
-        ),
-      );
+        '#machine_name' => [
+          'source' => ['bundle', 'name'],
+          'exists' => [$this, 'bundleExists'],
+        ],
+      ];
     }
 
-    $form['bundle']['description'] = array(
+    $form['bundle']['description'] = [
       '#title' => $this->t('Distribution description'),
       '#type' => 'textfield',
       '#default_value' => $default_values['description'],
       '#description' => $this->t('A description of the bundle.'),
       '#size' => 80,
-    );
+    ];
 
-    $form['bundle']['is_profile'] = array(
+    $form['bundle']['is_profile'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Include install profile'),
       '#default_value' => $default_values['is_profile'],
       '#description' => $this->t('Select this option to have your features packaged into an install profile.'),
-      '#attributes' => array(
+      '#attributes' => [
         'data-add-profile' => 'status',
-      ),
-    );
+      ],
+    ];
 
-    $show_and_require_if_profile_checked = array(
-      'visible' => array(
-        ':input[data-add-profile="status"]' => array('checked' => TRUE),
-      ),
-      'required' => array(
-        ':input[data-add-profile="status"]' => array('checked' => TRUE),
-      ),
-    );
+    $show_and_require_if_profile_checked = [
+      'visible' => [
+        ':input[data-add-profile="status"]' => ['checked' => TRUE],
+      ],
+      'required' => [
+        ':input[data-add-profile="status"]' => ['checked' => TRUE],
+      ],
+    ];
 
-    $form['bundle']['profile_name'] = array(
+    $form['bundle']['profile_name'] = [
       '#title' => $this->t('Profile name'),
       '#type' => 'textfield',
       '#default_value' => $default_values['profile_name'],
@@ -307,7 +312,7 @@ class AssignmentConfigureForm extends FormBase {
       '#size' => 30,
       // Show and require only if the profile.add option is selected.
       '#states' => $show_and_require_if_profile_checked,
-    );
+    ];
 
     // Attach the copyFieldValue behavior to the profile_name field. In
     // practice this only works if a user tabs through the bundle machine name
@@ -327,48 +332,48 @@ class AssignmentConfigureForm extends FormBase {
 
       $method_name = Html::escape($method['name']);
 
-      $form['weight'][$method_id] = array(
+      $form['weight'][$method_id] = [
         '#type' => 'weight',
-        '#title' => $this->t('Weight for @title package assignment method', array('@title' => Unicode::strtolower($method_name))),
+        '#title' => $this->t('Weight for @title package assignment method', ['@title' => mb_strtolower($method_name)]),
         '#title_display' => 'invisible',
         '#default_value' => $weight,
-        '#attributes' => array('class' => array('assignment-method-weight')),
+        '#attributes' => ['class' => ['assignment-method-weight']],
         '#delta' => 20,
-      );
+      ];
 
-      $form['title'][$method_id] = array('#markup' => $method_name);
+      $form['title'][$method_id] = ['#markup' => $method_name];
 
-      $form['enabled'][$method_id] = array(
+      $form['enabled'][$method_id] = [
         '#type' => 'checkbox',
-        '#title' => $this->t('Enable @title package assignment method', array('@title' => Unicode::strtolower($method_name))),
+        '#title' => $this->t('Enable @title package assignment method', ['@title' => mb_strtolower($method_name)]),
         '#title_display' => 'invisible',
         '#default_value' => $enabled,
-      );
+      ];
 
-      $form['description'][$method_id] = array('#markup' => $method['description']);
+      $form['description'][$method_id] = ['#markup' => $method['description']];
 
-      $config_op = array();
+      $config_op = [];
       if (isset($method['config_route_name'])) {
-        $config_op['configure'] = array(
+        $config_op['configure'] = [
           'title' => $this->t('Configure'),
-          'url' => Url::fromRoute($method['config_route_name'], array('bundle_name' => $current_bundle->getMachineName())),
-        );
+          'url' => Url::fromRoute($method['config_route_name'], ['bundle_name' => $current_bundle->getMachineName()]),
+        ];
         // If there is at least one operation enabled, show the operation
         // column.
         $form['#show_operations'] = TRUE;
       }
-      $form['operation'][$method_id] = array(
+      $form['operation'][$method_id] = [
         '#type' => 'operations',
         '#links' => $config_op,
-      );
+      ];
     }
 
-    $form['actions'] = array('#type' => 'actions', '#weight' => 9);
-    $form['actions']['submit'] = array(
+    $form['actions'] = ['#type' => 'actions', '#weight' => 9];
+    $form['actions']['submit'] = [
       '#type' => 'submit',
       '#button_type' => 'primary',
       '#value' => $this->t('Save settings'),
-    );
+    ];
 
     return $form;
   }
@@ -384,7 +389,7 @@ class AssignmentConfigureForm extends FormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    if ($form_state->getValue(array('bundle', 'is_profile')) && empty($form_state->getValue(array('bundle', 'profile_name')))) {
+    if ($form_state->getValue(['bundle', 'is_profile']) && empty($form_state->getValue(['bundle', 'profile_name']))) {
       $form_state->setErrorByName('bundle][profile_name', $this->t('To create a profile, please enter a profile name.'));
     }
 
@@ -400,41 +405,43 @@ class AssignmentConfigureForm extends FormBase {
     $method_weights = $form_state->getValue('weight');
     ksort($method_weights);
 
-    $machine_name = $form_state->getValue(array('bundle', 'machine_name'));
+    $machine_name = $form_state->getValue(['bundle', 'machine_name']);
 
     // If this is a new bundle, create it.
-    if ($form_state->getValue(array('bundle', 'bundle_select')) == self::NEW_BUNDLE_SELECT_VALUE) {
+    if ($form_state->getValue(['bundle', 'bundle_select']) == self::NEW_BUNDLE_SELECT_VALUE) {
       $bundle = $this->assigner->createBundleFromDefault($machine_name);
     }
     // Otherwise, load the current bundle and rename if needed.
     else {
       $bundle = $this->assigner->loadBundle();
       $old_name = $bundle->getMachineName();
-      $new_name = $form_state->getValue(array('bundle', 'machine_name'));
+      $new_name = $form_state->getValue(['bundle', 'machine_name']);
       if ($old_name != $new_name) {
         $bundle = $this->assigner->renameBundle($old_name, $new_name);
       }
     }
 
-    $bundle->setName($form_state->getValue(array('bundle', 'name')));
-    $bundle->setDescription($form_state->getValue(array('bundle', 'description')));
+    $bundle->setName($form_state->getValue(['bundle', 'name']));
+    $bundle->setDescription($form_state->getValue(['bundle', 'description']));
     $bundle->setEnabledAssignments(array_keys($enabled_methods));
     $bundle->setAssignmentWeights($method_weights);
-    $bundle->setIsProfile($form_state->getValue(array('bundle', 'is_profile')));
-    $bundle->setProfileName($form_state->getValue(array('bundle', 'profile_name')));
+    $bundle->setIsProfile($form_state->getValue(['bundle', 'is_profile']));
+    $bundle->setProfileName($form_state->getValue(['bundle', 'profile_name']));
     $bundle->save();
     $this->assigner->setBundle($bundle);
     $this->assigner->setCurrent($bundle);
 
     $form_state->setRedirect('features.assignment');
-    drupal_set_message($this->t('Package assignment configuration saved.'));
+    $this->messenger()->addStatus($this->t('Package assignment configuration saved.'));
   }
 
   /**
    * Callback for machine_name exists()
+   *
    * @param $value
    * @param $element
    * @param $form_state
+   *
    * @return bool
    */
   public function bundleExists($value, $element, $form_state) {

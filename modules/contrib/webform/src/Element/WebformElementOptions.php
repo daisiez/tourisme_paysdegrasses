@@ -3,12 +3,14 @@
 namespace Drupal\webform\Element;
 
 use Drupal\Component\Utility\NestedArray;
+use Drupal\Core\Render\Element;
 use Drupal\Core\Serialization\Yaml;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
 use Drupal\Core\Url;
 use Drupal\webform\Entity\WebformOptions as WebformOptionsEntity;
 use Drupal\webform\Utility\WebformElementHelper;
+use Drupal\webform\Utility\WebformOptionsHelper;
 
 /**
  * Provides a form element for managing webform element options.
@@ -84,20 +86,22 @@ class WebformElementOptions extends FormElement {
       ':href' => Url::fromRoute('entity.webform_options.collection')->toString(),
     ];
 
+    $has_options = (count($options)) ? TRUE : FALSE;
+
     // Select options.
     $element['options'] = [
       '#type' => 'select',
       '#description' => t('Please select <a href=":href">predefined @type</a> or enter custom @type.', $t_args),
       '#options' => [
-        self::CUSTOM_OPTION => t('Custom @type...', $t_args),
+        static::CUSTOM_OPTION => t('Custom @type…', $t_args),
       ] + $options,
 
       '#attributes' => [
         'class' => ['js-' . $element['#id'] . '-options'],
       ],
       '#error_no_message' => TRUE,
-      '#access' => count($options) ? TRUE : FALSE,
-      '#default_value' => (isset($element['#default_value']) && !is_array($element['#default_value'])) ? $element['#default_value'] : '',
+      '#access' => $has_options,
+      '#default_value' => (isset($element['#default_value']) && !is_array($element['#default_value']) && WebformOptionsHelper::hasOption($element['#default_value'], $options)) ? $element['#default_value'] : '',
     ];
 
     // Custom options.
@@ -106,11 +110,6 @@ class WebformElementOptions extends FormElement {
         '#type' => 'webform_multiple',
         '#title' => $element['#title'],
         '#title_display' => 'invisible',
-        '#states' => [
-          'visible' => [
-            'select.js-' . $element['#id'] . '-options' => ['value' => ''],
-          ],
-        ],
         '#error_no_message' => TRUE,
         '#default_value' => (isset($element['#default_value']) && !is_string($element['#default_value'])) ? $element['#default_value'] : [],
       ];
@@ -123,14 +122,17 @@ class WebformElementOptions extends FormElement {
         '#title_display' => 'invisible',
         '#label' => ($element['#likert']) ? t('answer') : t('option'),
         '#labels' => ($element['#likert']) ? t('answers') : t('options'),
-        '#states' => [
-          'visible' => [
-            'select.js-' . $element['#id'] . '-options' => ['value' => ''],
-          ],
-        ],
         '#error_no_message' => TRUE,
         '#options_description' => $element['#options_description'],
         '#default_value' => (isset($element['#default_value']) && !is_string($element['#default_value'])) ? $element['#default_value'] : [],
+      ];
+    }
+    // If there are options set #states.
+    if ($has_options) {
+      $element['custom']['#states'] = [
+        'visible' => [
+          'select.js-' . $element['#id'] . '-options' => ['value' => static::CUSTOM_OPTION],
+        ],
       ];
     }
 
@@ -153,7 +155,7 @@ class WebformElementOptions extends FormElement {
     $custom_value = NestedArray::getValue($form_state->getValues(), $element['custom']['#parents']);
 
     $value = $options_value;
-    if ($options_value == self::CUSTOM_OPTION) {
+    if ($options_value === static::CUSTOM_OPTION) {
       try {
         $value = (is_string($custom_value)) ? Yaml::decode($custom_value) : $custom_value;
       }
@@ -163,8 +165,7 @@ class WebformElementOptions extends FormElement {
       }
     }
 
-    $has_access = (!isset($element['#access']) || $element['#access'] === TRUE);
-    if ($element['#required'] && empty($value) && $has_access) {
+    if (Element::isVisibleElement($element) && $element['#required'] && empty($value)) {
       WebformElementHelper::setRequiredError($element, $form_state);
     }
 

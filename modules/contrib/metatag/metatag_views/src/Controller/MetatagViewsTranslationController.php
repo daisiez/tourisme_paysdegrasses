@@ -4,11 +4,12 @@ namespace Drupal\metatag_views\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Url;
 use Drupal\metatag\MetatagManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Drupal\Core\Config\ConfigFactoryInterface;
 
 /**
  * Translate Views meta tags.
@@ -16,11 +17,15 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class MetatagViewsTranslationController extends ControllerBase {
 
   /**
+   * The View storage interface.
+   *
    * @var \Drupal\Core\Entity\EntityStorageInterface
    */
   protected $viewStorage;
 
   /**
+   * The Metatag manager.
+   *
    * @var \Drupal\metatag\MetatagManagerInterface
    */
   protected $metatagManager;
@@ -31,14 +36,30 @@ class MetatagViewsTranslationController extends ControllerBase {
    * @var \Drupal\Core\Language\LanguageManagerInterface
    */
   protected $languageManager;
+  
+  /**
+   * The request stack.
+   *
+   * @var \Symfony\Component\HttpFoundation\RequestStack
+   */
+  protected $requestStack;
+
+  /**
+   * The configuration factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected $configFactory;
 
   /**
    * {@inheritdoc}
    */
-  public function __construct(EntityStorageInterface $viewStorage, MetatagManagerInterface $metatagManager, LanguageManagerInterface $languageManager) {
+  public function __construct(EntityStorageInterface $viewStorage, MetatagManagerInterface $metatagManager, LanguageManagerInterface $languageManager, RequestStack $request_stack, ConfigFactoryInterface $config_factory) {
     $this->viewStorage = $viewStorage;
     $this->metatagManager = $metatagManager;
     $this->languageManager = $languageManager;
+    $this->requestStack = $request_stack;
+    $this->configFactory = $config_factory;
   }
 
   /**
@@ -48,7 +69,9 @@ class MetatagViewsTranslationController extends ControllerBase {
     return new static(
       $container->get('entity_type.manager')->getStorage('view'),
       $container->get('metatag.manager'),
-      $container->get('language_manager')
+      $container->get('language_manager'),
+      $container->get('request_stack'),
+      $container->get('config.factory')
     );
   }
 
@@ -59,8 +82,8 @@ class MetatagViewsTranslationController extends ControllerBase {
    *   Page render array.
    */
   public function itemPage() {
-    $view_id = \Drupal::request()->get('view_id');
-    $display_id = \Drupal::request()->get('display_id');
+    $view_id = $this->requestStack->get('view_id');
+    $display_id = $this->requestStack->get('display_id');
 
     $view = $this->viewStorage->load($view_id);
     $original_langcode = $view->language()->getId();
@@ -68,8 +91,7 @@ class MetatagViewsTranslationController extends ControllerBase {
     $config_name = $view->getConfigDependencyName();
     $config_path = 'display.' . $display_id . '.display_options.display_extenders.metatag_display_extender.metatags';
 
-    $access_manager = \Drupal::service('access_manager');
-    $configuration = \Drupal::service('config.factory')->get($config_name);
+    $configuration = $this->configFactory->get($config_name);
     $config_source = $configuration->getOriginal($config_path, FALSE);
 
     $page['languages'] = [
@@ -139,7 +161,9 @@ class MetatagViewsTranslationController extends ControllerBase {
         '#links' => $operations,
         // Even if the mapper contains multiple language codes, the source
         // configuration can still be edited.
+        // {@code}
         // '#access' => ($langcode == $original_langcode) || $operations_access,
+        // {@endcode}
       ];
     }
 

@@ -1,0 +1,14 @@
+{
+    "name": "drupal/field_time",
+    "type": "drupal-module",
+    "description": "Provides Time and TimeRange field for Drupal 8 & 9",
+    "keywords": ["Drupal"],
+    "license": "GPL-2.0+",
+    "homepage": "https://www.drupal.org/project/field_time",
+    "minimum-stability": "dev",
+    "support": {
+        "issues": "https://www.drupal.org/project/field_time/issues",
+        "source": "https://git.drupalcode.org/project/field_time"
+    },
+    "require": { }
+}

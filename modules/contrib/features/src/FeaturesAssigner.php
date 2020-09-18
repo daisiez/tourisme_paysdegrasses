@@ -8,7 +8,6 @@ use Drupal\Core\Config\ExtensionInstallStorage;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Config\StorageInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
-use Drupal\features\Entity\FeaturesBundle;
 
 /**
  * Class responsible for performing package assignment.
@@ -61,7 +60,7 @@ class FeaturesAssigner implements FeaturesAssignerInterface {
   /**
    * Bundles.
    *
-   * @var array of \Drupal\features\FeaturesBundleInterface
+   * @var \Drupal\features\FeaturesBundleInterface[]
    */
   protected $bundles;
 
@@ -76,7 +75,7 @@ class FeaturesAssigner implements FeaturesAssignerInterface {
    * Constructs a new FeaturesAssigner object.
    *
    * @param \Drupal\features\FeaturesManagerInterface $features_manager
-   *    The features manager.
+   *   The features manager.
    * @param \Drupal\Component\Plugin\PluginManagerInterface $assigner_manager
    *   The package assignment methods plugin manager.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
@@ -113,7 +112,7 @@ class FeaturesAssigner implements FeaturesAssignerInterface {
    * {@inheritdoc}
    */
   public function reset() {
-    $this->methods = array();
+    $this->methods = [];
     $this->featuresManager->reset();
   }
 
@@ -134,7 +133,7 @@ class FeaturesAssigner implements FeaturesAssignerInterface {
   }
 
   /**
-   * Clean up the package list after all config has been assigned
+   * Clean up the package list after all config has been assigned.
    */
   protected function cleanup() {
     $packages = $this->featuresManager->getPackages();
@@ -181,7 +180,7 @@ class FeaturesAssigner implements FeaturesAssignerInterface {
    */
   protected function getAssignmentMethodInstance($method_id) {
     if (!isset($this->methods[$method_id])) {
-      $instance = $this->assignerManager->createInstance($method_id, array());
+      $instance = $this->assignerManager->createInstance($method_id, []);
       $instance->setFeaturesManager($this->featuresManager);
       $instance->setAssigner($this);
       $instance->setEntityTypeManager($this->entityTypeManager);
@@ -261,7 +260,7 @@ class FeaturesAssigner implements FeaturesAssignerInterface {
    */
   public function getBundleList() {
     if (empty($this->bundles)) {
-      $this->bundles = array();
+      $this->bundles = [];
       foreach ($this->entityTypeManager->getStorage('features_bundle')->loadMultiple() as $machine_name => $bundle) {
         $this->bundles[$machine_name] = $bundle;
       }
@@ -279,7 +278,7 @@ class FeaturesAssigner implements FeaturesAssignerInterface {
         return $bundle;
       }
     }
-    $machine_name = strtolower(str_replace(array(' ', '-'), '_', $name));
+    $machine_name = strtolower(str_replace([' ', '-'], '_', $name));
     if (isset($bundles[$machine_name])) {
       return $bundles[$machine_name];
     }
@@ -311,7 +310,7 @@ class FeaturesAssigner implements FeaturesAssignerInterface {
       $bundle->setDescription($description);
     }
     else {
-      $bundle->setDescription(t('Auto-generated bundle from package @name', array('@name' => $name)));
+      $bundle->setDescription(t('Auto-generated bundle from package @name', ['@name' => $name]));
     }
     $bundle->setIsProfile($is_profile);
     if (isset($profile_name)) {
@@ -374,7 +373,7 @@ class FeaturesAssigner implements FeaturesAssignerInterface {
    */
   public function getBundleOptions() {
     $list = $this->getBundleList();
-    $result = array();
+    $result = [];
     foreach ($list as $machine_name => $bundle) {
       $result[$machine_name] = $bundle->getName();
     }

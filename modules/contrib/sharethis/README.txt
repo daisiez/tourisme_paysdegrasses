@@ -4,6 +4,7 @@ CONTENTS OF THIS FILE
  * Requirements
  * Installation
  * Configuration
+ * Known Issues
  * Maintainers
 
 INTRODUCTION
@@ -24,6 +25,11 @@ CONFIGURATION
 -------------
  * Configure the Sharethis Module settings in
    Administration » Configuration » Services » Sharethis:
+
+KNOWN ISSUES
+------------
+* If using the Metatag module, if the "referrer" meta tag is set to
+  "no-referral" the email share functionality will fail to work properly.
 
 MAINTAINERS
 -----------

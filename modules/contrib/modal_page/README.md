@@ -58,13 +58,6 @@ No special requirements.
 vendor/bin/phpunit modules/modal_page
 ```
 
-### EXECUTING KERNELTEST WITH LANDO
-
-```
-lando php core/scripts/run-tests.sh --php /usr/local/bin/php --url http://d8.lndo.site --dburl mysql://drupal8:drupal8@database/drupal8 --sqlite simpletest.sqlite --module modal_page --verbose --color
-```
-
-
 ## MAINTAINERS
 
 ### Current maintainers:

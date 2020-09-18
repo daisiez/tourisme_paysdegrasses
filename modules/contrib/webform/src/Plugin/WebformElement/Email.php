@@ -20,9 +20,14 @@ class Email extends TextBase {
   /**
    * {@inheritdoc}
    */
-  public function getDefaultProperties() {
-    return parent::getDefaultProperties() + $this->getDefaultMultipleProperties();
+  protected function defineDefaultProperties() {
+    return [
+      'input_hide' => FALSE,
+    ] + parent::defineDefaultProperties()
+      + $this->defineDefaultMultipleProperties();
   }
+
+  /****************************************************************************/
 
   /**
    * {@inheritdoc}

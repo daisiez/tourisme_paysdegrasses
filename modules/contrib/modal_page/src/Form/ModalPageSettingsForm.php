@@ -6,9 +6,7 @@ use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\Core\PhpStorage\PhpStorageFactory;
-use Drupal\Core\Extension\ModuleHandlerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\modal_page\ModalPageSettersTrait;
 
 /**
@@ -22,9 +20,7 @@ class ModalPageSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    /**
-     * @var \Drupal\modal_page\Form\ModalPageSettingsForm
-     */
+    /** @var static $instance */
     $instance = parent::create($container);
     $instance->setModuleHandler($container->get('module_handler'));
 

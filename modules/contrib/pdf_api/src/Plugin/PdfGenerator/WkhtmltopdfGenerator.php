@@ -7,12 +7,15 @@
 
 namespace Drupal\pdf_api\Plugin\PdfGenerator;
 
+use Drupal\Component\Render\FormattableMarkup;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\pdf_api\Plugin\PdfGeneratorBase;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\pdf_api\Annotation\PdfGenerator;
 use Drupal\Core\Annotation\Translation;
 use mikehaertl\wkhtmlto\Pdf;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Messenger\MessengerInterface;
 
 /**
  * A PDF generator plugin for the WKHTMLTOPDF library.
@@ -27,13 +30,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class WkhtmltopdfGenerator extends PdfGeneratorBase implements ContainerFactoryPluginInterface {
 
   /**
-   * The global options for WKHTMLTOPDF.
-   *
-   * @var array
-   */
-  protected $options = array();
-
-  /**
    * Instance of the WKHtmlToPdf class library.
    *
    * @var \WkHtmlToPdf
@@ -41,12 +37,20 @@ class WkhtmltopdfGenerator extends PdfGeneratorBase implements ContainerFactoryP
   protected $generator;
 
   /**
+   * Instance of the messenger class.
+   *
+   * @var \Drupal\Core\Messenger;
+   */
+  protected $messenger;
+
+  /**
    * {@inheritdoc}
    */
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition, Pdf $generator) {
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, Pdf $generator, MessengerInterface $messenger) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
 
     $this->generator = $generator;
+    $this->messenger = $messenger;
   }
 
   /**
@@ -57,7 +61,8 @@ class WkhtmltopdfGenerator extends PdfGeneratorBase implements ContainerFactoryP
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('wkhtmltopdf')
+      $container->get('wkhtmltopdf'),
+      $container->get('messenger')
     );
   }
 
@@ -83,17 +88,6 @@ class WkhtmltopdfGenerator extends PdfGeneratorBase implements ContainerFactoryP
     // also make changes in the templates too.
     // $this->setHeader($header_content);
     // $this->setFooter($footer_content);
-    if ($save_pdf) {
-      $filename = $pdf_location;
-      if (empty($filename)) {
-        $filename = str_replace("/", "_", \Drupal::service('path.current')->getPath());
-        $filename = substr($filename, 1);
-      }
-      $this->stream($filename . '.pdf');
-    }
-    else {
-      $this->send();
-    }
   }
 
   /**
@@ -145,7 +139,7 @@ class WkhtmltopdfGenerator extends PdfGeneratorBase implements ContainerFactoryP
    */
   public function save($location) {
     $this->preGenerate();
-    $this->generator->send($location);
+    $this->generator->saveAs($location);
   }
 
   /**
@@ -153,7 +147,7 @@ class WkhtmltopdfGenerator extends PdfGeneratorBase implements ContainerFactoryP
    */
   public function send() {
     $this->preGenerate();
-    $this->generator->send();
+    $this->generator->send($this->generator->getPdfFilename(), true);
   }
 
   /**
@@ -162,16 +156,7 @@ class WkhtmltopdfGenerator extends PdfGeneratorBase implements ContainerFactoryP
   public function stream($filelocation) {
     $this->preGenerate();
     $this->generator->saveAs($filelocation);
-  }
-
-  /**
-   * Set global options.
-   *
-   * @param array $options
-   *   The array of options to merge into the currently set options.
-   */
-  protected function setOptions(array $options) {
-    $this->options += $options;
+    $this->generator->send($filelocation, false);
   }
 
   /**
@@ -179,6 +164,26 @@ class WkhtmltopdfGenerator extends PdfGeneratorBase implements ContainerFactoryP
    */
   protected function preGenerate() {
     $this->generator->setOptions($this->options);
+  }
+
+  /**
+   * Get errors from the generator.
+   *
+   * @return string
+   *   The content of the stderr pipe.
+   */
+  public function getStderr() {
+    return $this->generator->getError();
+  }
+
+  /**
+   * Get stdout output from the generator.
+   *
+   * @return string
+   *   The content of the stdout pipe.
+   */
+  public function getStdout() {
+    return $this->generator->getCommand()->getOutput();
   }
 
 }

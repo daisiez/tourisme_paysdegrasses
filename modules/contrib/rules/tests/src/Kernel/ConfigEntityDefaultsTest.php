@@ -6,11 +6,8 @@ namespace Drupal\Tests\rules\Kernel;
  * Tests default config.
  *
  * @group Rules
- * @group legacy
- * @todo Remove the 'legacy' tag when Rules no longer uses deprecated code.
- * @see https://www.drupal.org/project/rules/issues/2922757
  */
-class ConfigEntityDefaultsTest extends RulesDrupalTestBase {
+class ConfigEntityDefaultsTest extends RulesKernelTestBase {
 
   /**
    * The entity storage for Rules config entities.
@@ -24,12 +21,16 @@ class ConfigEntityDefaultsTest extends RulesDrupalTestBase {
    *
    * @var array
    */
-  public static $modules = ['rules', 'rules_test',
-    'rules_test_default_component', 'user', 'system',
+  protected static $modules = [
+    'rules',
+    'rules_test',
+    'rules_test_default_component',
+    'user',
+    'system',
   ];
 
   /**
-   * Disable strict config schema checking for now.
+   * Ensure strict config schema checking.
    *
    * @var bool
    */
@@ -45,7 +46,7 @@ class ConfigEntityDefaultsTest extends RulesDrupalTestBase {
   /**
    * {@inheritdoc}
    */
-  public function setUp() {
+  protected function setUp() {
     parent::setUp();
     $this->entityTypeManager = $this->container->get('entity_type.manager');
     $this->storage = $this->entityTypeManager->getStorage('rules_component');
@@ -67,7 +68,7 @@ class ConfigEntityDefaultsTest extends RulesDrupalTestBase {
       ->execute();
 
     // Test that the action was executed correctly.
-    $messages = drupal_get_messages();
+    $messages = $this->container->get('messenger')->all();
     $message_string = isset($messages['status'][0]) ? (string) $messages['status'][0] : NULL;
     $this->assertEquals($message_string, 'test@example.com');
 

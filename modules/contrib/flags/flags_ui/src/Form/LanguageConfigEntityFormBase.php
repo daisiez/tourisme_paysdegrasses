@@ -182,19 +182,19 @@ class LanguageConfigEntityFormBase extends EntityForm {
     $status = $mapping->save();
 
     // Grab the URL of the new entity. We'll use it in the message.
-    $url = $mapping->urlInfo();
+    $url = $mapping->toUrl();
 
     // Create an edit link.
     $edit_link = Link::fromTextAndUrl($this->t('Edit'), $url)->toString();
 
     if ($status == SAVED_UPDATED) {
       // If we edited an existing entity...
-      drupal_set_message($this->t('Mapping %label has been updated.', array('%label' => $mapping->label())));
+      $this->messenger()->addStatus($this->t('Mapping %label has been updated.', array('%label' => $mapping->label())));
       $this->logger('flags_languages')->notice('Mapping %label has been updated.', ['%label' => $mapping->label(), 'link' => $edit_link]);
     }
     else {
       // If we created a new entity...
-      drupal_set_message($this->t('Mapping %label has been added.', array('%label' => $mapping->label())));
+      $this->messenger()->addStatus($this->t('Mapping %label has been added.', array('%label' => $mapping->label())));
       $this->logger('flags_languages')->notice('Mapping %label has been added.', ['%label' => $mapping->label(), 'link' => $edit_link]);
     }
 

@@ -1,0 +1,9 @@
+services:
+  apidae_tourisme_dates.apidae_query_builder_subscriber:
+    class: 'Drupal\apidae_tourisme_dates\EventSubscriber\ApidaeDateQueryBuilderSubscriber'
+    tags:
+      - { name: 'event_subscriber' }
+  apidae_tourisme_dates.apidae_date_presave_subscriber:
+    class: 'Drupal\apidae_tourisme_dates\EventSubscriber\ApidaeDatePresaveSubscriber'
+    tags:
+      - { name: 'event_subscriber' }

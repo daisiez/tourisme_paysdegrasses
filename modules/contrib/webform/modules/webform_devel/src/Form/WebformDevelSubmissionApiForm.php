@@ -19,14 +19,14 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class WebformDevelSubmissionApiForm extends FormBase {
 
   /**
-   * Webform submission storage.
+   * The webform submission storage.
    *
    * @var \Drupal\webform\WebformSubmissionStorageInterface
    */
   protected $submissionStorage;
 
   /**
-   * Webform request handler.
+   * The webform request handler.
    *
    * @var \Drupal\webform\WebformRequestInterface
    */
@@ -105,7 +105,7 @@ class WebformDevelSubmissionApiForm extends FormBase {
     ];
     $form['submission']['message'] = [
       '#type' => 'webform_message',
-      '#message_message' => $this->t("Submitting the below values with trigger the %title webform's ::valdiateForm() and ::submitForm() callbacks.", ['%title' => $webform->label()]),
+      '#message_message' => $this->t("Submitting the below values will trigger the %title webform's ::validateFormValues() and ::submitFormValues() callbacks.", ['%title' => $webform->label()]),
       '#message_type' => 'warning',
     ];
     $form['submission']['values'] = [
@@ -132,12 +132,12 @@ class WebformDevelSubmissionApiForm extends FormBase {
 $values = ' . Variable::export($values) . ';
 
 // Check that the webform is open.
-$webform = \Drupal\webform\entity\Webform::load(\'' . $webform->id() . '\'); 
+$webform = \Drupal\webform\entity\Webform::load(\'' . $webform->id() . '\');
 $is_open = \Drupal\webform\WebformSubmissionForm::isOpen($webform);
 if ($is_open === TRUE) {
   // Validate webform submission values.
   $errors = \Drupal\webform\WebformSubmissionForm::validateFormValues($values);
-  
+
   // Submit webform submission values.
   if (empty($errors)) {
     $webform_submission = \Drupal\webform\WebformSubmissionForm::submitFormValues($values);
@@ -185,7 +185,9 @@ if ($is_open === TRUE) {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValue('values');
     $webform_submission = WebformSubmissionForm::submitFormValues($values);
-    drupal_set_message($this->t('New submission %title added.', ['%title' => $webform_submission->label()]));
+    $this->messenger()->addStatus($this->t('New submission %title added.', [
+      '%title' => $webform_submission->label(),
+    ]));
   }
 
 }

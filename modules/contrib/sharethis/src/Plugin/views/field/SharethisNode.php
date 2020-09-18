@@ -2,7 +2,6 @@
 
 namespace Drupal\sharethis\Plugin\views\field;
 
-use Drupal\Core\Url;
 use Drupal\sharethis\SharethisManagerInterface;
 use Drupal\views\ResultRow;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
@@ -75,16 +74,16 @@ class SharethisNode extends FieldPluginBase {
     return [
       '#theme' => 'sharethis_block',
       '#content' => $content,
-      '#attached' => array(
-        'library' => array(
+      '#attached' => [
+        'library' => [
           'sharethis/sharethispickerexternalbuttonsws',
           'sharethis/sharethispickerexternalbuttons',
           'sharethis/sharethis',
-        ),
-        'drupalSettings' => array(
+        ],
+        'drupalSettings' => [
           'sharethis' => $st_js,
-        ),
-      ),
+        ],
+      ],
     ];
   }
 

@@ -12,6 +12,7 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\State\StateInterface;
+use Drupal\image\Entity\ImageStyle;
 use Drupal\node\Entity\Node;
 use GuzzleHttp\ClientInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -153,6 +154,13 @@ class ApidaeSync {
   private $creator;
 
   /**
+   * Media image style to use before saving medias
+   *
+   * @var string|null
+   */
+  private $mediaImageStyle;
+
+  /**
    * Main langcode.
    *
    * @var string
@@ -216,12 +224,16 @@ class ApidaeSync {
     $this->apidaeApiKey = $config['api_key'];
     $this->apidaeProjectId = $config['project_id'];
     $this->languages = explode(',', $config['languages']);
-    $this->selectionIds = explode(',', $config['selectionIds']);
+    $this->selectionIds = $config['selectionIds'];
+    if (!is_array($this->selectionIds)) {
+      $this->selectionIds = explode(',', $this->selectionIds);
+    }
     $this->maxItemsPerBatch = $config['batch_size'];
     $this->creator = $config['uid'];
     $this->langcode = $config['default_langcode'];
     $this->syncMedias = $config['sync_medias'] ?? TRUE;
     $this->langcodeCapitalized = ucfirst($this->langcode);
+    $this->mediaImageStyle = $config['media_image_style'] ?? NULL;
     $this->state = $state;
     $this->lastUpdate = $this->state->get('apidae.last_sync', 0);
     $this->logger = $loggerFactory->get('apidae');
@@ -335,7 +347,7 @@ class ApidaeSync {
       return Json::decode($data);
     }
     catch (\Exception $e) {
-      $this->logger->error($this->t('error @message<br />query : @query', [
+      $this->logger->error($this->t('error @message<br />query : <code>@query</code>', [
         '@message' => $e->getMessage(),
         '@query' => print_r($query, TRUE),
       ]));
@@ -367,13 +379,49 @@ class ApidaeSync {
   /**
    * Apidae selections query.
    *
+   * @param array $override
+   *   Optional override parameters.
+   *
    * @return bool|mixed
    *   Return the project selection, false in case of error.
    */
-  public function selectionsQuery() {
+  public function selectionsQuery(array $override = []) {
     $query = [
-      'apiKey' => $this->apidaeApiKey,
-      'projetId' => $this->apidaeProjectId,
+      'apiKey' => $override['apiKey'] ?? $this->apidaeApiKey,
+      'projetId' => $override['projetId'] ?? $this->apidaeProjectId,
+    ];
+    $url = self::$url . 'referentiel/selections/?query=' . Json::encode($query);
+    try {
+      $response = $this->httpClient->get($url);
+      $data = $response->getBody();
+      return Json::decode($data);
+    }
+    catch (\Exception $e) {
+      $this->logger->error($this->t('@message<br />query : @query', [
+        '@message' => $e->getMessage(),
+        '@query' => print_r($query, TRUE),
+      ]));
+      return FALSE;
+    }
+  }
+
+  /**
+   * Apidae get information about selections.
+   *
+   * @param array $selection_id
+   *   Array of selection ids.
+   *
+   * @param array $override
+   *   Optional override parameters.
+   *
+   * @return bool|mixed
+   *   Return the project selection, false in case of error.
+   */
+  public function selectionsInformationQuery(array $selection_id, array $override = []) {
+    $query = [
+      'apiKey' => $override['apiKey'] ?? $this->apidaeApiKey,
+      'projetId' => $override['projetId'] ?? $this->apidaeProjectId,
+      'selectionIds' => $selection_id,
     ];
     $url = self::$url . 'referentiel/selections/?query=' . Json::encode($query);
     try {
@@ -663,13 +711,18 @@ class ApidaeSync {
    */
   private function getMedias(array $object) {
     $files = [];
+    if (!$style = ImageStyle::load($this->mediaImageStyle)) {
+      $this->mediaImageStyle = NULL;
+    }
     if (isset($object['illustrations']) && is_array($object['illustrations'])) {
       foreach ($object['illustrations'] as $illu) {
         $modificationDate = \DateTime::createFromFormat("Y-m-d\TH:i:s.uP", $illu['traductionFichiers'][0]['lastModifiedDate']);
         $url = $illu['traductionFichiers'][0]['url'];
         $filename = basename($url);
         $title = $illu['nom']['libelleFr'] ?? $filename;
+        $temporary = 'temporary://objets_touristiques/' . $modificationDate->format('Y-m') . '/';
         $folder = 'public://objets_touristiques/' . $modificationDate->format('Y-m') . '/';
+        $temporarydDestination = $temporary . $filename;
         $destination = $folder . $filename;
         if (file_exists($destination) && $existingFiles = $this->entityTypeManager->getStorage('file')->loadByProperties(['uri' => $destination])) {
           $files[] = array_pop($existingFiles);
@@ -678,8 +731,19 @@ class ApidaeSync {
         if (!is_dir($folder)) {
           $this->fileSystem->mkdir($folder, NULL, TRUE);
         }
+        if (!is_dir($temporary)) {
+          $this->fileSystem->mkdir($temporary, NULL, TRUE);
+        }
         if ($data = file_get_contents($url)) {
-          $file = file_save_data($data, $destination, FileSystemInterface::EXISTS_REPLACE);
+          if ($this->mediaImageStyle !== NULL) {
+            $file = file_save_data($data, $temporarydDestination, FileSystemInterface::EXISTS_REPLACE);
+            $style->createDerivative($temporarydDestination, $destination);
+            unlink($temporarydDestination);
+            $file->setFileUri($destination);
+          }
+          else {
+            $file = file_save_data($data, $destination, FileSystemInterface::EXISTS_REPLACE);
+          }
           $file->save();
           $files[] = [
             'target_id' => $file->id(),

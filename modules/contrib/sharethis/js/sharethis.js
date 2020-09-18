@@ -10,6 +10,7 @@
       if (typeof stLight !== 'undefined') {
         stLight.options(drupalSettings.sharethis);
       }
+      stButtons.locateElements();
     }
   };
 })(jQuery, drupalSettings);

@@ -74,6 +74,13 @@ abstract class MetaNameBase extends PluginBase {
   protected $multiple;
 
   /**
+   * True if the tag should use a text area.
+   *
+   * @var bool
+   */
+  protected $long;
+
+  /**
    * True if the URL value(s) must be absolute.
    *
    * @var bool
@@ -118,6 +125,7 @@ abstract class MetaNameBase extends PluginBase {
     $this->type = $plugin_definition['type'];
     $this->secure = $plugin_definition['secure'];
     $this->multiple = $plugin_definition['multiple'];
+    $this->long = !empty($plugin_definition['long']);
     $this->absoluteUrl = !empty($plugin_definition['absolute_url']);
     $this->request = \Drupal::request();
   }
@@ -213,6 +221,16 @@ abstract class MetaNameBase extends PluginBase {
   }
 
   /**
+   * Whether or not this meta tag should use a text area.
+   *
+   * @return bool
+   *   Whether or not this meta tag should use a text area.
+   */
+  public function isLong() {
+    return $this->long;
+  }
+
+  /**
    * Whether or not this meta tag must output required absolute URLs.
    *
    * @return bool
@@ -243,7 +261,7 @@ abstract class MetaNameBase extends PluginBase {
    */
   public function form(array $element = []) {
     $form = [
-      '#type' => 'textfield',
+      '#type' => $this->isLong() ? 'textarea' : 'textfield',
       '#title' => $this->label(),
       '#default_value' => $this->value(),
       '#maxlength' => 255,
@@ -268,7 +286,7 @@ abstract class MetaNameBase extends PluginBase {
 
     // Optional handling for secure paths.
     if (!empty($this->secure)) {
-      $form['#description'] .= ' ' . $this->t('Any links containing http:// will be converted to https://');
+      $form['#description'] .= ' ' . $this->t('Any URLs which start with "http://" will be converted to "https://".');
     }
 
     return $form;
@@ -314,15 +332,17 @@ abstract class MetaNameBase extends PluginBase {
    *   A render array or an empty string.
    */
   public function output() {
+    if (empty($this->value)) {
+      // If there is no value, we don't want a tag output.
+      return $this->multiple() ? [] : '';
+    }
+
     // Parse out the image URL, if needed.
     $value = $this->parseImageUrl();
-    $value = $this->tidy($value);
-
-    if (empty($value)) {
-      // If there is no value, we don't want a tag output.
-      $element = '';
-    }
-    else {
+    $values = $this->multiple() ? explode(',', $value) : [$value];
+    $elements = [];
+    foreach ($values as $value) {
+      $value = $this->tidy($value);
       if ($this->requiresAbsoluteUrl()) {
         // Relative URL.
         if (parse_url($value, PHP_URL_HOST) == NULL) {
@@ -339,7 +359,7 @@ abstract class MetaNameBase extends PluginBase {
         $value = str_replace('http://', 'https://', $value);
       }
 
-      $element = [
+      $elements[] = [
         '#tag' => 'meta',
         '#attributes' => [
           $this->nameAttribute => $this->name,
@@ -348,7 +368,7 @@ abstract class MetaNameBase extends PluginBase {
       ];
     }
 
-    return $element;
+    return $this->multiple() ? $elements : reset($elements);
   }
 
   /**

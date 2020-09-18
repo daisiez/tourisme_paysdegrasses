@@ -5,7 +5,8 @@ namespace Drupal\webform\Element;
 use Drupal\Core\Serialization\Yaml;
 use Drupal\Core\Render\Element\Textarea;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\webform\Twig\TwigExtension;
+use Drupal\webform\Entity\WebformSubmission;
+use Drupal\webform\Twig\WebformTwigExtension;
 use Drupal\webform\Utility\WebformYaml;
 
 /**
@@ -45,8 +46,10 @@ class WebformCodeMirror extends Textarea {
       '#input' => TRUE,
       '#mode' => 'text',
       '#skip_validation' => FALSE,
+      '#decode_value' => FALSE,
       '#cols' => 60,
       '#rows' => 5,
+      '#wrap' => TRUE,
       '#resizable' => 'vertical',
       '#process' => [
         [$class, 'processWebformCodeMirror'],
@@ -66,13 +69,13 @@ class WebformCodeMirror extends Textarea {
    * {@inheritdoc}
    */
   public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
-    if ($input === FALSE && $element['#mode'] == 'yaml' && isset($element['#default_value'])) {
+    if ($input === FALSE && $element['#mode'] === 'yaml' && isset($element['#default_value'])) {
       // Convert associative array in default value to YAML.
       if (is_array($element['#default_value'])) {
-        $element['#default_value'] = WebformYaml::tidy(Yaml::encode($element['#default_value']));
+        $element['#default_value'] = WebformYaml::encode($element['#default_value']);
       }
       // Convert empty YAML into an empty string.
-      if ($element['#default_value'] == '{  }') {
+      if ($element['#default_value'] === '{  }') {
         $element['#default_value'] = '';
       }
       return $element['#default_value'];
@@ -90,8 +93,8 @@ class WebformCodeMirror extends Textarea {
     }
 
     // Check edit Twig template permission and complete disable editing.
-    if ($element['#mode'] == 'twig') {
-      if (!TwigExtension::hasEditTwigAccess()) {
+    if ($element['#mode'] === 'twig') {
+      if (!WebformTwigExtension::hasEditTwigAccess()) {
         $element['#disable'] = TRUE;
         $element['#attributes']['disabled'] = 'disabled';
         $element['#field_prefix'] = [
@@ -100,6 +103,11 @@ class WebformCodeMirror extends Textarea {
           '#message_message' => t("Only webform administrators and user's assigned the 'Edit webform Twig templates' permission are allowed to edit this Twig template."),
         ];
       }
+    }
+
+    // Set wrap off.
+    if (empty($element['#wrap'])) {
+      $element['#attributes']['wrap'] = 'off';
     }
 
     // Add validate callback.
@@ -136,12 +144,11 @@ class WebformCodeMirror extends Textarea {
       $element['#value'] = $element['#default_value'];
       $form_state->setValueForElement($element, $element['#default_value']);
     }
-
     $errors = static::getErrors($element, $form_state, $complete_form);
     if ($errors) {
       $build = [
         'title' => [
-          '#markup' => t('%title is not valid.', ['%title' => (isset($element['#title']) ? $element['#title'] : t('YAML'))]),
+          '#markup' => t('%title is not valid.', ['%title' => static::getTitle($element)]),
         ],
         'errors' => [
           '#theme' => 'item_list',
@@ -152,7 +159,9 @@ class WebformCodeMirror extends Textarea {
     }
     else {
       // If editing YAML and #default_value is an array, decode #value.
-      if ($element['#mode'] == 'yaml' && (isset($element['#default_value']) && is_array($element['#default_value']))) {
+      if ($element['#mode'] === 'yaml'
+        && (isset($element['#default_value']) && is_array($element['#default_value']) || $element['#decode_value'])
+      ) {
         // Handle rare case where single array value is not parsed correctly.
         if (preg_match('/^- (.*?)\s*$/', $element['#value'], $match)) {
           $value = [$match[1]];
@@ -175,54 +184,45 @@ class WebformCodeMirror extends Textarea {
 
     switch ($element['#mode']) {
       case 'html':
-        // @see: http://stackoverflow.com/questions/3167074/which-function-in-php-validate-if-the-string-is-valid-html
-        // @see: http://stackoverflow.com/questions/5030392/x-html-validator-in-php
-        libxml_use_internal_errors(TRUE);
-        if (simplexml_load_string('<fragment>' . $element['#value'] . '</fragment>')) {
-          return NULL;
-        }
-
-        $errors = libxml_get_errors();
-        libxml_clear_errors();
-        if (!$errors) {
-          return NULL;
-        }
-
-        $messages = [];
-        foreach ($errors as $error) {
-          $messages[] = $error->message;
-        }
-        return $messages;
+        return static::validateHtml($element, $form_state, $complete_form);
 
       case 'yaml':
-        try {
-          $value = $element['#value'];
-          $data = Yaml::decode($value);
-          if (!is_array($data) && $value) {
-            throw new \Exception(t('YAML must contain an associative array of elements.'));
-          }
-          return NULL;
-        }
-        catch (\Exception $exception) {
-          return [$exception->getMessage()];
-        }
+        return static::validateYaml($element, $form_state, $complete_form);
 
       case 'twig':
-        try {
-          $build = [
-            '#type' => 'inline_template',
-            '#template' => $element['#value'],
-            '#context' => [],
-          ];
-          \Drupal::service('renderer')->renderPlain($build);
-          return NULL;
-        }
-        catch (\Exception $exception) {
-          return [$exception->getMessage()];
-        }
+        return static::validateTwig($element, $form_state, $complete_form);
 
       default:
         return NULL;
+    }
+  }
+
+  /**
+   * Get an element's title.
+   *
+   * @param array $element
+   *   An element.
+   *
+   * @return string
+   *   The element's title.
+   */
+  protected static function getTitle(array $element) {
+    if (isset($element['#title'])) {
+      return $element['#title'];
+    }
+
+    switch ($element['#mode']) {
+      case 'html':
+        return t('HTML');
+
+      case 'yaml':
+        return t('YAML');
+
+      case 'twig':
+        return t('Twig');
+
+      default:
+        return t('Code');
     }
   }
 
@@ -237,6 +237,121 @@ class WebformCodeMirror extends Textarea {
    */
   public static function getMode($mode) {
     return (isset(static::$modes[$mode])) ? static::$modes[$mode] : static::$modes['text'];
+  }
+
+  /****************************************************************************/
+  // Language/markup validation callback.
+  /****************************************************************************/
+
+  /**
+   * Validate HTML.
+   *
+   * @param array $element
+   *   The form element whose value is being validated.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   * @param array $complete_form
+   *   The complete form structure.
+   *
+   * @return array|null
+   *   An array of error messages.
+   */
+  protected static function validateHtml($element, FormStateInterface $form_state, $complete_form) {
+    // @see: http://stackoverflow.com/questions/3167074/which-function-in-php-validate-if-the-string-is-valid-html
+    // @see: http://stackoverflow.com/questions/5030392/x-html-validator-in-php
+    libxml_use_internal_errors(TRUE);
+    if (simplexml_load_string('<fragment>' . $element['#value'] . '</fragment>')) {
+      return NULL;
+    }
+
+    $errors = libxml_get_errors();
+    libxml_clear_errors();
+    if (!$errors) {
+      return NULL;
+    }
+
+    $messages = [];
+    foreach ($errors as $error) {
+      $messages[] = $error->message;
+    }
+    return $messages;
+  }
+
+  /**
+   * Validate Twig.
+   *
+   * @param array $element
+   *   The form element whose value is being validated.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   * @param array $complete_form
+   *   The complete form structure.
+   *
+   * @return array|null
+   *   An array of error messages.
+   */
+  protected static function validateTwig($element, FormStateInterface $form_state, $complete_form) {
+    $template = $element['#value'];
+    $form_object = $form_state->getFormObject();
+    try {
+      // If form object has ::getWebform method validate Twig template
+      // using a temporary webform submission context.
+      if (method_exists($form_object, 'getWebform')) {
+        /** @var \Drupal\webform\WebformInterface $webform */
+        $webform = $form_object->getWebform();
+
+        // Get a temporary webform submission.
+        /** @var \Drupal\webform\WebformSubmissionGenerateInterface $webform_submission_generate */
+        $webform_submission_generate = \Drupal::service('webform_submission.generate');
+        $values = [
+          // Set sid to 0 to prevent validation errors.
+          'sid' => 0,
+          'webform_id' => $webform->id(),
+          'data' => $webform_submission_generate->getData($webform),
+        ];
+        $webform_submission = WebformSubmission::create($values);
+        $build = WebformTwigExtension::buildTwigTemplate($webform_submission, $template, []);
+      }
+      else {
+        $build = [
+          '#type' => 'inline_template',
+          '#template' => $element['#value'],
+          '#context' => [],
+        ];
+      }
+      \Drupal::service('renderer')->renderPlain($build);
+      return NULL;
+    }
+    catch (\Exception $exception) {
+      return [$exception->getMessage()];
+    }
+  }
+
+  /**
+   * Validate YAML.
+   *
+   * @param array $element
+   *   The form element whose value is being validated.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   * @param array $complete_form
+   *   The complete form structure.
+   *
+   * @return array|null
+   *   An array of error messages.
+   */
+  protected static function validateYaml($element, FormStateInterface $form_state, $complete_form) {
+    try {
+      $value = $element['#value'];
+      $data = Yaml::decode($value);
+      if (!is_array($data) && $value) {
+        throw new \Exception(t('YAML must contain an associative array of elements.'));
+      }
+      return NULL;
+    }
+    catch (\Exception $exception) {
+      return [$exception->getMessage()];
+    }
   }
 
 }

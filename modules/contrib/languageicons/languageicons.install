@@ -10,7 +10,7 @@
  */
 function languageicons_install() {
   // Use our supplied set of icons by default.
-  $path = drupal_get_path('module', 'languageicons') . DIRECTORY_SEPARATOR . 'flags' . DIRECTORY_SEPARATOR . '*.png';
+  $path = drupal_get_path('module', 'languageicons') . '/flags/*.png';
   \Drupal::configFactory()
     ->getEditable('languageicons.settings')
     ->set('path', $path)

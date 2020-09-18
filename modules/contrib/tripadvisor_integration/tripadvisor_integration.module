@@ -48,7 +48,7 @@ function tripadvisor_integration_fetch_content($tripadvisor_id, $langcode) {
     }
     catch (Exception $e) {
       watchdog_exception('tripadvisor_integration', $e);
-      drupal_set_message(t('Unable to retrieve data from TripAdvisor API.'), 'error');
+      \Drupal::messenger()->addError(t('Unable to retrieve data from TripAdvisor API.'));
     }
   }
 }

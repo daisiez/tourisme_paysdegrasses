@@ -11,10 +11,11 @@ use Drupal\rules\Core\RulesActionBase;
  *   id = "rules_list_item_add",
  *   label = @Translation("Add list item"),
  *   category = @Translation("Data"),
- *   context = {
+ *   context_definitions = {
  *     "list" = @ContextDefinition("list",
  *       label = @Translation("List"),
- *       description = @Translation("The data list, to which an item is to be added.")
+ *       description = @Translation("The data list, to which an item is to be added."),
+ *       assignment_restriction = "selector"
  *     ),
  *     "item" = @ContextDefinition("any",
  *       label = @Translation("Item"),
@@ -31,12 +32,11 @@ use Drupal\rules\Core\RulesActionBase;
  *       description = @Translation("Position to insert the item."),
  *       default_value = "end",
  *       required = FALSE
- *     )
+ *     ),
  *   }
  * )
  *
- * @todo: Add access callback information from Drupal 7?
- * @todo: set ContextDefinition restriction
+ * @todo Add access callback information from Drupal 7?
  */
 class DataListItemAdd extends RulesActionBase {
 

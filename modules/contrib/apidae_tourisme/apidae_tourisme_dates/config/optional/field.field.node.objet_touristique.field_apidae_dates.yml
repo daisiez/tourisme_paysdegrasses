@@ -1,0 +1,21 @@
+uuid: 2e11ad65-7aa4-4d5f-8016-38332fa87694
+langcode: fr
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_apidae_dates
+    - node.type.objet_touristique
+  module:
+    - apidae_tourisme_dates
+id: node.objet_touristique.field_apidae_dates
+field_name: field_apidae_dates
+entity_type: node
+bundle: objet_touristique
+label: Dates
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: apidae_date

@@ -11,7 +11,7 @@ use Drupal\Core\Session\AccountProxy;
 use Drupal\Tests\UnitTestCase;
 use Drupal\modal_page\ModalPage;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Drupal\Core\Path\AliasManager;
+use Drupal\path_alias\AliasManager;
 
 /**
  * Tests for ModalPage class.

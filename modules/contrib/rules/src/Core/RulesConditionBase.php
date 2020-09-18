@@ -2,6 +2,7 @@
 
 namespace Drupal\rules\Core;
 
+use Drupal\Component\Plugin\Exception\ContextException;
 use Drupal\Core\Condition\ConditionPluginBase;
 use Drupal\rules\Context\ContextProviderTrait;
 
@@ -41,7 +42,7 @@ abstract class RulesConditionBase extends ConditionPluginBase implements RulesCo
     catch (ContextException $e) {
       // Catch the undocumented exception thrown when no context value is set
       // for a required context.
-      // @todo: Remove once https://www.drupal.org/node/2677162 is fixed.
+      // @todo Remove once https://www.drupal.org/node/2677162 is fixed.
       if (strpos($e->getMessage(), 'context is required') === FALSE) {
         throw $e;
       }

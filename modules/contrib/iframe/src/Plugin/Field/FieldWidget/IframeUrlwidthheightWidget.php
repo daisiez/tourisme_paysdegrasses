@@ -26,4 +26,3 @@ class IframeUrlwidthheightWidget extends IframeWidgetBase {
   }
 
 }
-

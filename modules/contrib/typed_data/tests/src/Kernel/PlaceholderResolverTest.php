@@ -50,6 +50,13 @@ class PlaceholderResolverTest extends KernelTestBase {
   protected $placeholderResolver;
 
   /**
+   * A simple global context for testing.
+   *
+   * @var \Drupal\typed_data_global_context_test\ContextProvider\SimpleTestContext
+   */
+  protected $simpleTestContext;
+
+  /**
    * Modules to enable.
    *
    * @var array
@@ -61,16 +68,27 @@ class PlaceholderResolverTest extends KernelTestBase {
     'field',
     'text',
     'user',
+    'typed_data_global_context_test',
   ];
 
   /**
    * {@inheritdoc}
    */
-  public function setUp() {
+  protected function setUp() {
     parent::setUp();
+
+    $this->installEntitySchema('user');
+    $this->installEntitySchema('node');
+    $this->installSchema('system', ['sequences']);
+
+    // Make sure default date formats are there for testing the format_date
+    // filter.
+    $this->installConfig(['system']);
+
     $this->typedDataManager = $this->container->get('typed_data_manager');
     $this->entityTypeManager = $this->container->get('entity_type.manager');
     $this->placeholderResolver = $this->container->get('typed_data.placeholder_resolver');
+    $this->simpleTestContext = $this->container->get('typed_data_global_context_test.simple_test_context');
 
     $this->entityTypeManager->getStorage('node_type')
       ->create(['type' => 'page'])
@@ -89,19 +107,11 @@ class PlaceholderResolverTest extends KernelTestBase {
       'bundle' => 'page',
     ])->save();
 
-    $this->installSchema('system', ['sequences']);
-    $this->installEntitySchema('user');
-    $this->installEntitySchema('node');
-
     $this->node = $this->entityTypeManager->getStorage('node')
       ->create([
         'title' => 'test',
         'type' => 'page',
       ]);
-
-    // Make sure default date formats are there for testing the format_date
-    // filter.
-    $this->installConfig(['system']);
   }
 
   /**
@@ -124,6 +134,101 @@ class PlaceholderResolverTest extends KernelTestBase {
     $this->assertEquals([
       'date' => [
         '| filter' => '{{ date | filter }}',
+      ],
+    ], $placeholders);
+    // Test a simple placeholder with and without a filter.
+    $text = "text {{ date | filter }} text {{ date }}";
+    $placeholders = $this->placeholderResolver->scan($text);
+    $this->assertEquals([
+      'date' => [
+        '| filter' => '{{ date | filter }}',
+        '' => '{{ date }}',
+      ],
+    ], $placeholders);
+    // Test a compound placeholder with and without a filter.
+    $text = "text {{ node.title.value | lower }} text {{ node.title.value }}";
+    $placeholders = $this->placeholderResolver->scan($text);
+    $this->assertEquals([
+      'node' => [
+        'title.value | lower' => '{{ node.title.value | lower }}',
+        'title.value' => '{{ node.title.value }}',
+      ],
+    ], $placeholders);
+    // Test a global context variable placeholder.
+    $text = "global context variable token {{ @service_id:context.property }}";
+    $placeholders = $this->placeholderResolver->scan($text);
+    $this->assertEquals([
+      '@service_id:context' => [
+        'property' => '{{ @service_id:context.property }}',
+      ],
+    ], $placeholders);
+    // Test a global context variable placeholder with a period in the
+    // service id.
+    $text = "global context variable token {{ @service.id:context.property }}";
+    $placeholders = $this->placeholderResolver->scan($text);
+    $this->assertEquals([
+      '@service.id:context' => [
+        'property' => '{{ @service.id:context.property }}',
+      ],
+    ], $placeholders);
+  }
+
+  /**
+   * @covers ::scan
+   */
+  public function testEmptyPlaceholders() {
+    $text = 'text {{ }} text';
+    $placeholders = $this->placeholderResolver->scan($text);
+    $this->assertEquals([
+      '' => [
+        '' => '{{ }}',
+      ],
+    ], $placeholders);
+  }
+
+  /**
+   * @covers ::scan
+   */
+  public function testNoPlaceholders() {
+    $text = 'test text does not have any placeholders';
+    $placeholders = $this->placeholderResolver->scan($text);
+    $this->assertEquals([], $placeholders);
+  }
+
+  /**
+   * @covers ::scan
+   */
+  public function testMalformedPlaceholders() {
+    $text = "text {{ node. title }} text";
+    $placeholders = $this->placeholderResolver->scan($text);
+    $this->assertEquals([], $placeholders);
+
+    $text = "text {{ node .title }} text";
+    $placeholders = $this->placeholderResolver->scan($text);
+    $this->assertEquals([], $placeholders);
+
+    $text = "text {{node.}} text";
+    $placeholders = $this->placeholderResolver->scan($text);
+    $this->assertEquals([], $placeholders);
+
+    $text = "text {{ node| }} text";
+    $placeholders = $this->placeholderResolver->scan($text);
+    $this->assertEquals([], $placeholders);
+
+    $text = "text {{ no de }} text";
+    $placeholders = $this->placeholderResolver->scan($text);
+    $this->assertEquals([], $placeholders);
+  }
+
+  /**
+   * @covers ::scan
+   */
+  public function testFilterOnly() {
+    $text = "text {{ |filter }} text";
+    $placeholders = $this->placeholderResolver->scan($text);
+    $this->assertEquals([
+      '' => [
+        '|filter' => '{{ |filter }}',
       ],
     ], $placeholders);
   }
@@ -159,6 +264,17 @@ class PlaceholderResolverTest extends KernelTestBase {
     ]);
     $expected = [
       '{{string}}' => 'replacement',
+    ];
+    $this->assertEquals($expected, $result);
+
+    // Test a global context variable placeholder.
+    $text = 'test {{ @typed_data_global_context_test.simple_test_context:dragons }}';
+    $context = $this->simpleTestContext->getRuntimeContexts(['dragons']);
+    $result = $this->placeholderResolver->resolvePlaceholders($text, [
+      '@typed_data_global_context_test.simple_test_context:dragons' => $context['dragons']->getContextData(),
+    ]);
+    $expected = [
+      '{{ @typed_data_global_context_test.simple_test_context:dragons }}' => 'Dragons are better than unicorns!',
     ];
     $this->assertEquals($expected, $result);
   }
@@ -285,6 +401,18 @@ class PlaceholderResolverTest extends KernelTestBase {
     $this->placeholderResolver->replacePlaceHolders("test {{ node.created.value | format_date('medium') }}", ['node' => $this->node->getTypedData()], $bubbleable_metadata);
     $expected = Cache::mergeTags(['node:' . $this->node->id()], DateFormat::load('medium')->getCacheTags());
     $this->assertEquals($expected, $bubbleable_metadata->getCacheTags());
+  }
+
+  /**
+   * @covers ::replacePlaceHolders
+   */
+  public function testGlobalContextVariable() {
+    $text = 'test {{ @typed_data_global_context_test.simple_test_context:dragons }}';
+    $context = $this->simpleTestContext->getRuntimeContexts(['dragons']);
+    $result = $this->placeholderResolver->replacePlaceHolders($text, [
+      '@typed_data_global_context_test.simple_test_context:dragons' => $context['dragons']->getContextData(),
+    ]);
+    $this->assertEquals('test Dragons are better than unicorns!', $result);
   }
 
 }

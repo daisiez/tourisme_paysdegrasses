@@ -4,7 +4,7 @@ modal_page.settings:
     _title: 'Modal Page Settings'
     _form: 'Drupal\modal_page\Form\ModalPageSettingsForm'
   requirements:
-    _permission: 'administer site configuration'
+    _permission: 'administer modal entity'
 
 entity.modal_page_modal.canonical:
   path: '/admin/structure/modal/{modal_page_modal}'
@@ -13,7 +13,7 @@ entity.modal_page_modal.canonical:
     _title: 'Modal'
   requirements:
     _entity_access: 'modal_page_modal.view'
-    _permission: 'administer site configuration'
+    _permission: 'view modal entity'
 
 modal_page.default:
   path: '/admin/structure/modal'
@@ -21,7 +21,7 @@ modal_page.default:
     _entity_list: 'modal_page_modal'
     _title: 'Modal'
   requirements:
-    _permission: 'administer site configuration'
+    _permission: 'view modal entity'
 
 modal_page.help:
   path: '/admin/modal/help'
@@ -29,7 +29,7 @@ modal_page.help:
     _controller: '\Drupal\modal_page\Controller\ModalHelpController::index'
     _title: 'Help'
   requirements:
-    _permission: 'administer site configuration'
+    _permission: 'view modal entity'
 
 
 modal_page.add_modal:
@@ -39,7 +39,7 @@ modal_page.add_modal:
     _title: 'Add Modal'
   requirements:
     _entity_create_access: 'modal_page_modal'
-    _permission: 'administer site configuration'
+    _permission: 'add modal entity'
 
 entity.modal_page_modal.edit_form:
   path: '/admin/structure/modal/{modal_page_modal}/edit'
@@ -48,7 +48,7 @@ entity.modal_page_modal.edit_form:
     _title: 'Edit Modal'
   requirements:
     _entity_access: 'modal_page_modal.edit'
-    _permission: 'administer site configuration'
+    _permission: 'edit modal entity'
 
 entity.modal_page_modal.delete_form:
   path: '/admin/structure/modal/{modal_page_modal}/delete'
@@ -57,5 +57,14 @@ entity.modal_page_modal.delete_form:
     _title: 'Delete Modal'
   requirements:
     _entity_access: 'modal_page_modal.delete'
-    _permission: 'administer site configuration'
+    _permission: 'delete modal entity'
+
+entity.modal_page_modal.published_form:
+  path: '/admin/structure/modal/{modal_page_modal}/published'
+  defaults:
+    _entity_form: modal_page_modal.published
+    _title: 'Published Modal'
+  requirements:
+    _entity_access: 'modal_page_modal.published'
+    _permission: 'published modal entity'
 

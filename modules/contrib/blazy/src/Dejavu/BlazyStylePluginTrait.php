@@ -4,7 +4,6 @@ namespace Drupal\blazy\Dejavu;
 
 use Drupal\Component\Utility\Xss;
 use Drupal\Component\Utility\Html;
-use Drupal\Component\Utility\Unicode;
 
 /**
  * A Trait common for optional views style plugins.
@@ -12,25 +11,22 @@ use Drupal\Component\Utility\Unicode;
 trait BlazyStylePluginTrait {
 
   /**
-   * The blazy manager service.
-   *
-   * @var \Drupal\blazy\BlazyManagerInterface
-   */
-  protected $blazyManager;
-
-  /**
-   * Returns the blazy manager.
-   */
-  public function blazyManager() {
-    return $this->blazyManager;
-  }
-
-  /**
    * Returns available fields for select options.
    */
   public function getDefinedFieldOptions($definitions = []) {
     $field_names = $this->displayHandler->getFieldLabels();
     $definition = [];
+    $stages = [
+      'blazy_media',
+      'block_field',
+      'colorbox',
+      'entity_reference_entity_view',
+      'gridstack_file',
+      'gridstack_media',
+      'photobox',
+      'video_embed_field_video',
+      'youtube_video',
+    ];
 
     // Formatter based fields.
     $options = [];
@@ -74,28 +70,15 @@ trait BlazyStylePluginTrait {
           $options['classes'][$field] = $field_names[$field];
         }
 
-        $slicks   = strpos($handler['type'], 'slick') !== FALSE;
-        $overlays = [
-          'block_field',
-          'entity_reference_entity_view',
-          'video_embed_field_video',
-          'youtube_video',
-        ];
-        if ($slicks || in_array($handler['type'], $overlays)) {
+        $slicks = strpos($handler['type'], 'slick') !== FALSE;
+        if ($slicks || in_array($handler['type'], $stages)) {
           $options['overlays'][$field] = $field_names[$field];
         }
 
         // Allows advanced formatters/video as the main image replacement.
         // They are not reasonable for thumbnails, but main images.
         // Note: Certain Responsive image has no ID at Views, possibly a bug.
-        $images = [
-          'block_field',
-          'colorbox',
-          'photobox',
-          'video_embed_field_video',
-          'youtube_video',
-        ];
-        if (in_array($handler['type'], $images)) {
+        if (in_array($handler['type'], $stages)) {
           $options['images'][$field] = $field_names[$field];
         }
       }
@@ -108,8 +91,9 @@ trait BlazyStylePluginTrait {
           $options['thumb_captions'][$field] = $field_names[$field];
         }
 
-        if ($handler['field'] == 'view_node') {
+        if (in_array($handler['field'], ['nid', 'nothing', 'view_node'])) {
           $options['links'][$field] = $field_names[$field];
+          $options['titles'][$field] = $field_names[$field];
         }
 
         $blazies = strpos($handler['field'], 'blazy_') !== FALSE;
@@ -202,7 +186,7 @@ trait BlazyStylePluginTrait {
    */
   public function isImageRenderable($row, $index, $field_image = '') {
     if (!empty($field_image) && $image = $this->getFieldRenderable($row, $index, $field_image)) {
-      if ($item = $this->getImageItem($image)) {
+      if ($this->getImageItem($image)) {
         return $image;
       }
 
@@ -290,20 +274,6 @@ trait BlazyStylePluginTrait {
   }
 
   /**
-   * Returns the renderable array of field containing rendered and raw data.
-   */
-  public function getFieldRenderable($row, $index, $field_name = '', $multiple = FALSE) {
-    if (empty($field_name)) {
-      return FALSE;
-    }
-
-    // Be sure to not check "Use field template" under "Style settings" to have
-    // renderable array to work with, otherwise flattened string!
-    $result = isset($this->view->field[$field_name]) ? $this->view->field[$field_name]->getItems($row) : [];
-    return empty($result) ? [] : ($multiple ? $result : $result[0]);
-  }
-
-  /**
    * Returns the string values for the expected Title, ET label, List, Term.
    *
    * @todo re-check this, or if any consistent way to retrieve string values.
@@ -326,24 +296,24 @@ trait BlazyStylePluginTrait {
         $tags = explode(',', $value);
         $rendered_tags = [];
         foreach ($tags as $tag) {
-          $rendered_tags[] = Html::cleanCssIdentifier(Unicode::strtolower(trim($tag)));
+          $rendered_tags[] = Html::cleanCssIdentifier(mb_strtolower(trim($tag)));
         }
         $values[$index] = implode(' ', $rendered_tags);
       }
       else {
         $value = is_string($value) ? $value : (isset($value[0]['value']) && !empty($value[0]['value']) ? $value[0]['value'] : '');
-        $values[$index] = empty($value) ? '' : Html::cleanCssIdentifier(Unicode::strtolower($value));
+        $values[$index] = empty($value) ? '' : Html::cleanCssIdentifier(mb_strtolower($value));
       }
     }
 
     // Term reference/ET, either as link or plain text.
     if (empty($values)) {
-      if ($renderable = $this->getFieldRenderable($row, $field_name, TRUE)) {
+      if ($renderable = $this->getFieldRenderable($row, $index, $field_name, TRUE)) {
         $value = [];
         foreach ($renderable as $key => $render) {
           $class = isset($render['rendered']['#title']) ? $render['rendered']['#title'] : $renderer->render($render['rendered']);
           $class = trim(strip_tags($class));
-          $value[$key] = Html::cleanCssIdentifier(Unicode::strtolower($class));
+          $value[$key] = Html::cleanCssIdentifier(mb_strtolower($class));
         }
         $values[$index] = empty($value) ? '' : implode(' ', $value);
       }

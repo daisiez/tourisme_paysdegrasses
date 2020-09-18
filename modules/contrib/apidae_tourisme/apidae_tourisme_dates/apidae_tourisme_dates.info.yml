@@ -1,0 +1,14 @@
+name: 'Apidae Tourisme - Dates Support'
+type: module
+description: 'Add dates synchronisation for events'
+core: 8.x
+package: 'Web services'
+core_version_requirement: ^8 || ^9
+dependencies:
+  - apidae_tourisme
+  - field_time
+
+# Information added by Drupal.org packaging script on 2020-07-22
+version: '2.1.2'
+project: 'apidae_tourisme'
+datestamp: 1595418101

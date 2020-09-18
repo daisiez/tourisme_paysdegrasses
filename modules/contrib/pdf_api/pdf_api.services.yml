@@ -5,8 +5,8 @@ services:
   wkhtmltopdf:
     class: mikehaertl\wkhtmlto\Pdf
   mpdf:
-    class: mPDF
+    class: Mpdf\Mpdf
   tcpdf:
     class: TCPDF
   dompdf:
-    class: DOMPDF
+    class: Dompdf\Dompdf

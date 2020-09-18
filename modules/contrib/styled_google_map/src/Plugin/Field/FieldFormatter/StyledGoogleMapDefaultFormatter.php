@@ -140,8 +140,8 @@ class StyledGoogleMapDefaultFormatter extends FormatterBase {
       '#title' => $this->t('JSON Style'),
       '#default_value' => empty($style_settings['style']) ? $default_settings['style']['style'] : $style_settings['style'],
       '#description' => $this->t('Check out !url for custom styles. Also check out this !project to style and edit Google Map JSON styles.', array(
-        '!url' => \Drupal::l($this->t('Snazzy maps'), Url::fromUri('http://snazzymaps.com/')),
-        '!project' => \Drupal::l($this->t('Github page'), Url::fromUri('http://instrument.github.io/styled-maps-wizard/')),
+        '!url' => \Drupal::service('link_generator')->generate($this->t('Snazzy maps'), Url::fromUri('http://snazzymaps.com/')),
+        '!project' => \Drupal::service('link_generator')->generate($this->t('Github page'), Url::fromUri('http://instrument.github.io/styled-maps-wizard/')),
       )
       ),
     );
@@ -151,10 +151,9 @@ class StyledGoogleMapDefaultFormatter extends FormatterBase {
       '#default_value' => empty($style_settings['pin']) ? $default_settings['style']['pin'] : $style_settings['pin'],
       '#description' => $this->t('URL to the marker image. You can use a !wrapper for the url. Ex. !example (not working until !fixed)',
         array(
-          '!wrapper' => \Drupal::l($this->t('Stream wrapper'),
-          Url::fromUri('https://drupal.org/project/system_stream_wrapper')),
+          '!wrapper' => \Drupal::service('link_generator')->generate($this->t('Stream wrapper'), Url::fromUri('https://drupal.org/project/system_stream_wrapper')),
           '!example' => STYLED_GOOGLE_MAP_DEFAULT_PIN,
-          '!fixed' => \Drupal::l('https://www.drupal.org/node/1308152', Url::fromUri('https://www.drupal.org/node/1308152')),
+          '!fixed' => \Drupal::service('link_generator')->generate('https://www.drupal.org/node/1308152', Url::fromUri('https://www.drupal.org/node/1308152')),
         )
       ),
     );
@@ -203,7 +202,7 @@ class StyledGoogleMapDefaultFormatter extends FormatterBase {
       '#id' => 'edit-popup-choice-field',
     );
     // Retrieve view mode settings from the current entity bundle.
-    $view_modes = \Drupal::entityManager()->getViewModeOptions($form['#entity_type']);
+    $view_modes = \Drupal::service('entity_display.repository')->getViewModeOptions($form['#entity_type']);
     $elements['popup']['view_mode'] = array(
       '#type' => 'select',
       '#options' => $view_modes,

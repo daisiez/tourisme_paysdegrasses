@@ -6,7 +6,6 @@ use Drupal\country\Controller\CountryAutocompleteController;
 use Drupal\field\Entity\FieldConfig;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Drupal\Component\Utility\Unicode;
 
 /**
  * Returns autocomplete responses for countries.
@@ -31,7 +30,7 @@ class CountryFlagAutocompleteController extends CountryAutocompleteController {
       $field_definition = FieldConfig::loadByName($entity_type, $bundle, $field_name);
       $countries = \Drupal::service('country.field.manager')->getSelectableCountries($field_definition);
       foreach ($countries as $iso2 => $country) {
-        if (strpos(Unicode::strtolower($country), Unicode::strtolower($string)) !== FALSE) {
+        if (strpos(mb_strtolower($country), mb_strtolower($string)) !== FALSE) {
           $label = array(
             'country' => array('#markup' => $country),
             'flag' => array(

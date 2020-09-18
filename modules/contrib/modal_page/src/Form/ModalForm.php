@@ -20,9 +20,6 @@ class ModalForm extends ContentEntityForm {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    /**
-     * @var \Drupal\modal_page\Form\ModalForm
-     */
     $instance = parent::create($container);
     $instance->setLanguageManager($container->get('language_manager'));
 
@@ -62,15 +59,55 @@ class ModalForm extends ContentEntityForm {
       '#title' => $this->t('Advanced'),
     ];
 
-    $form['advanced']['published'] = $form['published'];
-    $form['advanced']['delay_display'] = $form['delay_display'];
-    $form['advanced']['modal_size'] = $form['modal_size'];
-    $form['advanced']['ok_label_button'] = $form['ok_label_button'];
+    $form['advanced']['modal_customization'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Customization'),
+    ];
 
+    $form['advanced']['modal_customization']['ok_button'] = [
+      '#type' => 'details',
+      '#title' => $this->t('OK Button'),
+    ];
+
+    $form['advanced']['modal_customization']['ok_button']['ok_label_button'] = $form['ok_label_button'];
+
+    $form['advanced']['modal_customization']['dont_show_again'] = [
+      '#type' => 'details',
+      '#title' => $this->t("Don't show again"),
+    ];
+
+    $form['advanced']['modal_customization']['dont_show_again']['enable_dont_show_again_option'] = $form['enable_dont_show_again_option'];
+
+    $form['advanced']['modal_customization']['modal_size'] = [
+      '#type' => 'details',
+      '#title' => $this->t("Modal Size"),
+    ];
+
+    $form['advanced']['modal_customization']['modal_size']['modal_size'] = $form['modal_size'];
+
+    $form['advanced']['roles_restriction'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Roles Restriction'),
+    ];
+
+    $form['advanced']['roles_restriction']['roles'] = $form['roles'];
+
+    $form['advanced']['extras'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Extras'),
+    ];
+
+    $form['advanced']['extras']['type'] = $form['type'];
+    $form['advanced']['extras']['delay_display'] = $form['delay_display'];
+    $form['advanced']['extras']['published'] = $form['published'];
+
+    unset($form['type']);
     unset($form['published']);
     unset($form['delay_display']);
     unset($form['modal_size']);
     unset($form['ok_label_button']);
+    unset($form['enable_dont_show_again_option']);
+    unset($form['roles']);
 
     $form['actions']['cancel'] = [
       '#type' => 'link',
@@ -111,13 +148,21 @@ class ModalForm extends ContentEntityForm {
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
     $values = $form_state->getValues();
-    $pages = $values['pages'];
-    $pages = $pages[0]['value'];
-    $url_list = explode(PHP_EOL, $pages);
+    $pages = $values['pages'][0]['value'];
+    $url_list = !empty($pages) ? explode(PHP_EOL, $pages) : [];
+
     foreach ($url_list as $url) {
+
       $trim_url = trim($url);
-      if ($trim_url !== '<front>' && $trim_url[0] !== '/') {
-        $form_state->setErrorByName('url_list', $this->t("@url path needs to start with a slash.", ['@url' => $trim_url]));
+
+      // Validate Slash.
+      if ($trim_url !== '<front>' && $trim_url[0] !== '/' && $trim_url[0] !== '') {
+        $form_state->setErrorByName('pages', $this->t("@url path needs to start with a slash.", ['@url' => $trim_url]));
+      }
+
+      // Validate wildcard.
+      if (strpos($trim_url, '*') !== FALSE && substr($trim_url, -1) != '*') {
+        $form_state->setErrorByName('pages', $this->t("The wildcard * must be used at the end of the path. E.g. /admin/*"));
       }
     }
   }

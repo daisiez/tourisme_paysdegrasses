@@ -11,10 +11,10 @@ use Drupal\rules\Core\RulesActionBase;
  *   id = "rules_data_set",
  *   label = @Translation("Set a data value"),
  *   category = @Translation("Data"),
- *   context = {
+ *   context_definitions = {
  *     "data" = @ContextDefinition("any",
  *       label = @Translation("Data"),
- *       description = @Translation("Specifies the data to be modified using a data selector, e.g. 'node:author:name'."),
+ *       description = @Translation("Specifies the data to be modified using a data selector, e.g. 'node.author.name'."),
  *       allow_null = TRUE,
  *       assignment_restriction = "selector"
  *     ),
@@ -23,11 +23,10 @@ use Drupal\rules\Core\RulesActionBase;
  *       description = @Translation("The new value to set for the specified data."),
  *       default_value = NULL,
  *       required = FALSE
- *     )
+ *     ),
  *   }
  * )
  *
- * @todo Add various input restrictions: selector on 'data'.
  * @todo 'allow NULL' for both 'data' and 'value'?
  */
 class DataSet extends RulesActionBase {

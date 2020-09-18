@@ -21,7 +21,9 @@ class WebformSelectOther extends WebformOtherBase {
    * {@inheritdoc}
    */
   protected static $properties = [
+    '#title',
     '#required',
+    '#required_error',
     '#options',
     '#default_value',
     '#attributes',
@@ -29,6 +31,7 @@ class WebformSelectOther extends WebformOtherBase {
     '#multiple',
     '#empty_value',
     '#empty_option',
+    '#sort_options',
 
     '#ajax',
   ];

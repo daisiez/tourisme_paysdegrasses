@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\rules\Kernel;
 
+use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\node\Entity\Node;
 use Drupal\rules\Context\ContextConfig;
 use Drupal\rules\Context\ContextDefinition;
@@ -13,23 +14,20 @@ use Drupal\user\Entity\User;
  * Test using Drupal core integration of Rules API.
  *
  * @group Rules
- * @group legacy
- * @todo Remove the 'legacy' tag when Rules no longer uses deprecated code.
- * @see https://www.drupal.org/project/rules/issues/2922757
  */
-class CoreIntegrationTest extends RulesDrupalTestBase {
+class CoreIntegrationTest extends RulesKernelTestBase {
 
   /**
    * Modules to enable.
    *
    * @var array
    */
-  public static $modules = ['node', 'field', 'text', 'user'];
+  protected static $modules = ['node', 'field', 'text', 'user'];
 
   /**
    * {@inheritdoc}
    */
-  public function setUp() {
+  protected function setUp() {
     parent::setUp();
 
     $this->installSchema('system', ['sequences']);
@@ -72,12 +70,15 @@ class CoreIntegrationTest extends RulesDrupalTestBase {
       ->map('text', 'node.uid.entity.name.value')
     );
 
-    $rule->addAction('rules_test_log');
+    $rule->addAction('rules_test_debug_log');
 
     RulesComponent::create($rule)
       ->addContextDefinition('node', ContextDefinition::create('entity:node'))
       ->setContextValue('node', $node)
       ->execute();
+
+    // Test that the action logged something.
+    $this->assertRulesDebugLogEntryExists('action called');
   }
 
   /**
@@ -159,8 +160,8 @@ class CoreIntegrationTest extends RulesDrupalTestBase {
       ->setContextValue('type', 'status')
       ->execute();
 
-    $messages = drupal_set_message();
-    $this->assertEquals((string) $messages['status'][0], 'Hello klausi!');
+    $messages = $this->messenger->all();
+    $this->assertEquals((string) $messages[MessengerInterface::TYPE_STATUS][0], 'Hello klausi!');
   }
 
   /**
@@ -202,8 +203,8 @@ class CoreIntegrationTest extends RulesDrupalTestBase {
       ->setContextValue('type', 'status')
       ->execute();
 
-    $messages = drupal_set_message();
-    $this->assertEquals((string) $messages['status'][0], 'The node was created in the year 1970');
+    $messages = $this->messenger->all();
+    $this->assertEquals((string) $messages[MessengerInterface::TYPE_STATUS][0], 'The node was created in the year 1970');
   }
 
   /**
@@ -260,7 +261,7 @@ class CoreIntegrationTest extends RulesDrupalTestBase {
     );
     // Set the title of the new node so that it is marked for auto-saving.
     $nested_rule->addAction('rules_data_set', ContextConfig::create()
-      ->map('data', 'entity.title')
+      ->map('data', 'node_created.title')
       ->setValue('value', 'new title')
     );
 
@@ -315,8 +316,8 @@ class CoreIntegrationTest extends RulesDrupalTestBase {
 
     // Test using global context during execution.
     $component->execute();
-    $messages = drupal_set_message();
-    $this->assertEquals((string) $messages['status'][0], 'hubert');
+    $messages = $this->messenger->all();
+    $this->assertEquals((string) $messages[MessengerInterface::TYPE_STATUS][0], 'hubert');
   }
 
 }

@@ -10,30 +10,6 @@ namespace Drupal\Tests\scheduler\Functional;
 class SchedulerNonEnabledTypeTest extends SchedulerBrowserTestBase {
 
   /**
-   * {@inheritdoc}
-   */
-  public function setUp() {
-    parent::setUp();
-
-    // Create a 'Not for scheduler' content type.
-    $this->contentName = 'not_for_scheduler';
-    $this->contentType = $this->drupalCreateContentType(['type' => $this->contentName, 'name' => 'Not for Scheduler']);
-
-    // Create an administrator user.
-    $this->adminUser = $this->drupalCreateUser([
-      'access content',
-      'administer scheduler',
-      'create ' . $this->contentName . ' content',
-      'edit own ' . $this->contentName . ' content',
-      'delete own ' . $this->contentName . ' content',
-      'view own unpublished content',
-      'administer nodes',
-      'schedule publishing of nodes',
-      'access site reports',
-    ]);
-  }
-
-  /**
    * Helper function for testNonEnabledNodeType().
    *
    * This function is called four times.
@@ -57,7 +33,7 @@ class SchedulerNonEnabledTypeTest extends SchedulerBrowserTestBase {
 
     // Check that the field(s) are displayed only for the correct settings.
     $title = $info . ' (' . $run_number . 'a)';
-    $this->drupalGet('node/add/' . $this->contentName);
+    $this->drupalGet('node/add/' . $this->nonSchedulerNodeType->id());
     if ($publishing_enabled) {
       $this->assertFieldByName('publish_on[0][value][date]', NULL, 'The Publish-on field is shown - ' . $title);
     }
@@ -79,8 +55,8 @@ class SchedulerNonEnabledTypeTest extends SchedulerBrowserTestBase {
     $edit = [
       'title' => $title,
       'status' => 0,
-      'type' => $this->contentName,
-      'publish_on' => REQUEST_TIME - 2,
+      'type' => $this->nonSchedulerNodeType->id(),
+      'publish_on' => $this->requestTime - 2,
     ];
     $node = $this->drupalCreateNode($edit);
 
@@ -106,8 +82,8 @@ class SchedulerNonEnabledTypeTest extends SchedulerBrowserTestBase {
     $edit = [
       'title' => $title,
       'status' => 1,
-      'type' => $this->contentName,
-      'unpublish_on' => REQUEST_TIME - 1,
+      'type' => $this->nonSchedulerNodeType->id(),
+      'unpublish_on' => $this->requestTime - 1,
     ];
     $node = $this->drupalCreateNode($edit);
 
@@ -144,18 +120,18 @@ class SchedulerNonEnabledTypeTest extends SchedulerBrowserTestBase {
     $this->checkNonEnabledTypes(FALSE, FALSE, 1);
 
     // 2. Explicitly disable this content type for both settings and test again.
-    $this->contentType->setThirdPartySetting('scheduler', 'publish_enable', FALSE)
+    $this->nonSchedulerNodeType->setThirdPartySetting('scheduler', 'publish_enable', FALSE)
       ->setThirdPartySetting('scheduler', 'unpublish_enable', FALSE)
       ->save();
     $this->checkNonEnabledTypes(FALSE, FALSE, 2);
 
     // 3. Turn on scheduled publishing only and test again.
-    $this->contentType->setThirdPartySetting('scheduler', 'publish_enable', TRUE)
+    $this->nonSchedulerNodeType->setThirdPartySetting('scheduler', 'publish_enable', TRUE)
       ->save();
     $this->checkNonEnabledTypes(TRUE, FALSE, 3);
 
     // 4. Turn on scheduled unpublishing only and test again.
-    $this->contentType->setThirdPartySetting('scheduler', 'publish_enable', FALSE)
+    $this->nonSchedulerNodeType->setThirdPartySetting('scheduler', 'publish_enable', FALSE)
       ->setThirdPartySetting('scheduler', 'unpublish_enable', TRUE)
       ->save();
     $this->checkNonEnabledTypes(FALSE, TRUE, 4);

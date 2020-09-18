@@ -3,12 +3,13 @@
 namespace Drupal\color_field;
 
 /**
- * Hex represents the Hex color format
+ * Hex represents the Hex color format.
  */
 class ColorHex extends ColorBase {
 
   /**
    * The Hex triplet of the color.
+   *
    * @var int
    */
   private $color;
@@ -20,8 +21,7 @@ class ColorHex extends ColorBase {
    *   The string hex value (i.e. "FFFFFF").
    * @param string $opacity
    *   The opacity value.
-   * @return ColorHex
-   *   The ColorHex object.
+   *
    * @throws Exception
    */
   public function __construct($color, $opacity) {
@@ -46,16 +46,16 @@ class ColorHex extends ColorBase {
   }
 
   /**
-   * A string representation of this color in the current format
+   * A string representation of this color in the current format.
    *
    * @param bool $opacity
    *   Whether or not to display the opacity.
    *
    * @return string
-   *   The color in format: #RRGGBB
+   *   The color in format: #RRGGBB.
    */
   public function toString($opacity = TRUE) {
-    $rgb = $this->toRGB();
+    $rgb = $this->toRgb();
     $hex = '#';
     $hex .= str_pad(dechex($rgb->getRed()), 2, "0", STR_PAD_LEFT);
     $hex .= str_pad(dechex($rgb->getGreen()), 2, "0", STR_PAD_LEFT);
@@ -63,7 +63,7 @@ class ColorHex extends ColorBase {
     if ($opacity) {
       $hex .= ' ' . $this->getOpacity();
     }
-    return strtoupper($hex);
+    return strtolower($hex);
   }
 
   /**
@@ -76,12 +76,19 @@ class ColorHex extends ColorBase {
   /**
    * {@inheritdoc}
    */
-  public function toRGB() {
+  public function toRgb() {
     $red = (($this->color & 0xFF0000) >> 16);
     $green = (($this->color & 0x00FF00) >> 8);
     $blue = (($this->color & 0x0000FF));
     $opacity = $this->getOpacity();
     return new ColorRGB($red, $green, $blue, $opacity);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function toHsl() {
+    return $this->toRGB()->toHsl();
   }
 
 }

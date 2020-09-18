@@ -99,6 +99,9 @@ class CountryFlagFormatter extends CountryDefaultFormatter {
           '#source' => 'country',
         );
       }
+
+      $elements[$delta]['#prefix'] = '<div class="field__flags__item">';
+      $elements[$delta]['#suffix'] = '</div>';
     }
 
     return $elements;

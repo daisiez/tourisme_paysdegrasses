@@ -1,5 +1,5 @@
 languageicons.settings:
-  type: mapping
+  type: config_object
   label: Language Icons settings
   mapping:
     show_node:

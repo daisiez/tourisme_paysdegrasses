@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * A module that adds one of the ShareThis widget to your website.
@@ -15,15 +16,15 @@ use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 function sharethis_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     case 'sharethis.configuration_form':
-      return '<p>' . t('Choose the widget, button family, and services for using <a href=":sharethis">ShareThis</a> to share content online.', array(':sharethis' => 'http://www.sharethis.com')) . '</p>';
+      return '<p>' . t('Choose the widget, button family, and services for using <a href=":sharethis">ShareThis</a> to share content online.', [':sharethis' => 'http://www.sharethis.com']) . '</p>';
 
     case 'help.page.sharethis':
       $return_value = '<p>' . t('This plugin places the ShareThis widget on each node.') . '</p>';
       $return_value .= '<ul><li>' . t('The Block pulls the URL from the current page and current Drupal title, the node version pulls it from the node title and url.') . '</li>';
       $return_value .= '<li>' . t('The block can be placed anywhere on a page, the node is limited to where nodes normally go') . '</li>';
       $return_value .= '<li>' . t('The block module is more likely to be compatible with other plugins that use blocks rather than nodes. (Panels works nicely with the block)') . '</li></ul>';
-      $return_value .= '<p>' . t('For various configuration options please got to <a href=":sharethis">the settings page</a>.', array(':sharethis' => Url::fromRoute('sharethis.configuration_form'))) . '</p>';
-      $return_value .= '<p>' . t('For more information, please visit <a href=":help">support.sharethis.com</a>.', array(':help' => 'http://support.sharethis.com/customer/portal/articles/446621-drupal-integration')) . '</p>';
+      $return_value .= '<p>' . t('For various configuration options please got to <a href=":sharethis">the settings page</a>.', [':sharethis' => Url::fromRoute('sharethis.configuration_form')]) . '</p>';
+      $return_value .= '<p>' . t('For more information, please visit <a href=":help">support.sharethis.com</a>.', [':help' => 'http://support.sharethis.com/customer/portal/articles/446621-drupal-integration']) . '</p>';
       return $return_value;
 
   }
@@ -33,23 +34,15 @@ function sharethis_help($route_name, RouteMatchInterface $route_match) {
  * Implements hook_theme().
  */
 function sharethis_theme($existing, $type, $theme, $path) {
-  return array(
-    'sharethis_block' => array(
-      'variables' => array(
-        'content' => array(
+  return [
+    'sharethis_block' => [
+      'variables' => [
+        'content' => [
           'st_spans' => NULL,
-        ),
-      ),
-      'function' => 'theme_sharethis_block',
-    ),
-  );
-}
-
-/**
- * Theme function for ShareThis code based on settings.
- */
-function theme_sharethis_block($variables) {
-  return '<div class="sharethis-wrapper">' . $variables['content']['st_spans'] . '</div>';
+        ],
+      ],
+    ],
+  ];
 }
 
 /**
@@ -57,19 +50,19 @@ function theme_sharethis_block($variables) {
  */
 function sharethis_entity_extra_field_info() {
   $sharethis_settings = \Drupal::config('sharethis.settings');
-  $extra = array();
+  $extra = [];
   // Only add extra fields if the location is the node content.
   if ($sharethis_settings->get('location') == 'content') {
     $entity_info = \Drupal::service('entity_type.bundle.info')->getAllBundleInfo();
     if (isset($entity_info['node'])) {
       foreach ($entity_info['node'] as $bundle => $bundle_info) {
-        $extra['node'][$bundle]['display'] = array(
-          'sharethis' => array(
+        $extra['node'][$bundle]['display'] = [
+          'sharethis' => [
             'label' => t('ShareThis'),
             'description' => t('ShareThis links'),
             'weight' => $sharethis_settings->get('weight'),
-          ),
-        );
+          ],
+        ];
       }
     }
 
@@ -79,11 +72,12 @@ function sharethis_entity_extra_field_info() {
 
 /**
  * Implements hook_ENTITY_TYPE_view().
- *
- * Inserts ShareThis widget code onto each node view.
- * TODO: Want to add the option somewhere to select nodes.
  */
 function sharethis_node_view(array &$build, EntityInterface $node, EntityViewDisplayInterface $display, $view_mode) {
+  // Break if node has not yet been saved.
+  if ($node->id() === NULL) {
+    return;
+  }
   $sharethis_manager = \Drupal::service('sharethis.manager');
   $sharethis_settings = \Drupal::config('sharethis.settings');
   // Don't display if the user is currently searching, or in the RSS feed.
@@ -106,21 +100,21 @@ function sharethis_node_view(array &$build, EntityInterface $node, EntityViewDis
       if (isset($enabled_types[$node->bundle()]) && $enabled_types[$node->bundle()] === $node->bundle() && $display->getcomponent('sharethis')) {
         $st_js = $sharethis_manager->sharethisIncludeJs();
         $content = $sharethis_manager->renderSpans($data_options, $title, $path);
-        $build['sharethis'] = array(
+        $build['sharethis'] = [
           '#theme' => 'sharethis_block',
           '#content' => $content,
-          '#attached' => array(
-            'library' => array(
+          '#attached' => [
+            'library' => [
               'sharethis/sharethispickerexternalbuttonsws',
               'sharethis/sharethispickerexternalbuttons',
               'sharethis/sharethis',
-            ),
-            'drupalSettings' => array(
+            ],
+            'drupalSettings' => [
               'sharethis' => $st_js,
-            ),
-          ),
+            ],
+          ],
           '#weight' => $sharethis_settings->get('weight'),
-        );
+        ];
       }
       break;
 
@@ -129,34 +123,34 @@ function sharethis_node_view(array &$build, EntityInterface $node, EntityViewDis
       if (isset($enabled_view_modes[$view_mode]) && $enabled_view_modes[$view_mode]) {
         $st_js = $sharethis_manager->sharethisIncludeJs();
         $content = $sharethis_manager->renderSpans($data_options, $title, $path);
-        $links['sharethis'] = array(
-          'title' => array(
+        $links['sharethis'] = [
+          'title' => [
             '#theme' => 'sharethis_block',
             '#content' => $content,
-            '#attached' => array(
-              'library' => array(
+            '#attached' => [
+              'library' => [
                 'sharethis/sharethispickerexternalbuttonsws',
                 'sharethis/sharethispickerexternalbuttons',
                 'sharethis/sharethis',
-              ),
-              'drupalSettings' => array(
+              ],
+              'drupalSettings' => [
                 'sharethis' => $st_js,
-              ),
-            ),
-          ),
-          'attributes' => array('class' => 'sharethis-buttons'),
-        );
-        $build['links'] = array(
+              ],
+            ],
+          ],
+          'attributes' => ['class' => 'sharethis-buttons'],
+        ];
+        $build['links'] = [
           '#theme' => 'links',
           '#links' => $links,
-          '#attributes' => array(
-            'class' => array('links', 'inline'),
-          ),
-        // Wrap it in a div.
+          '#attributes' => [
+            'class' => ['links', 'inline'],
+          ],
+          // Wrap it in a div.
           '#tag' => 'div',
           '#type' => 'html_tag',
           '#weight' => $sharethis_settings->get('weight'),
-        );
+        ];
       }
       break;
   }
@@ -181,21 +175,21 @@ function sharethis_comment_view(array &$build, EntityInterface $comment, EntityV
     $route_match = \Drupal::routeMatch();
     $title = \Drupal::service('title_resolver')->getTitle($request, $route_match->getRouteObject());
     $content = $sharethis_manager->renderSpans($data_options, $title, $path);
-    $build['sharethis'] = array(
+    $build['sharethis'] = [
       '#theme' => 'sharethis_block',
       '#content' => $content,
-      '#attached' => array(
-        'library' => array(
+      '#attached' => [
+        'library' => [
           'sharethis/sharethispickerexternalbuttonsws',
           'sharethis/sharethispickerexternalbuttons',
           'sharethis/sharethis',
-        ),
-        'drupalSettings' => array(
+        ],
+        'drupalSettings' => [
           'sharethis' => $st_js,
-        ),
-      ),
-      '#attributes' => array('class' => 'sharethis-comment'),
+        ],
+      ],
+      '#attributes' => ['class' => 'sharethis-comment'],
       '#weight' => $sharethis_settings->get('location'),
-    );
+    ];
   }
 }

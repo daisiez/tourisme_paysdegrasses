@@ -12,15 +12,16 @@ use Drupal\rules\Core\RulesActionBase;
  *   id = "rules_entity_delete",
  *   label = @Translation("Delete entity"),
  *   category = @Translation("Entity"),
- *   context = {
+ *   context_definitions = {
  *     "entity" = @ContextDefinition("entity",
  *       label = @Translation("Entity"),
- *       description = @Translation("Specifies the entity, which should be deleted permanently.")
- *     )
+ *       description = @Translation("Specifies the entity, which should be deleted permanently."),
+ *       assignment_restriction = "selector"
+ *     ),
  *   }
  * )
  *
- * @todo: Add access callback information from Drupal 7.
+ * @todo Add access callback information from Drupal 7.
  */
 class EntityDelete extends RulesActionBase {
 

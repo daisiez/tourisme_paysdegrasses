@@ -1,0 +1,14 @@
+name: LiveChat
+type: module
+description: LiveChat – Adds LiveChat to your website, allowing you to create a Customer Support for your customers.
+package: Utility
+configure: livechat.settings
+# version: '8.x'
+# core: '8.x'
+# project: 'livechat'
+
+# Information added by Drupal.org packaging script on 2019-02-07
+version: '8.x-3.0-beta2'
+core: '8.x'
+project: 'livechat'
+datestamp: 1549499587
